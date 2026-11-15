@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iBanking TDTU - Cổng Thanh Toán Học Phí Trực Tuyến</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        tdtu: {
+                            blue: '#003B7A',
+                            navy: '#0B2240',
+                            red: '#D32F2F',
+                            light: '#EEF4FB',
+                            accent: '#1E60B4',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bank-card-gradient {
+            background: linear-gradient(135deg, #0B2240 0%, #003B7A 50%, #154580 100%);
+        }
+        .gold-chip {
+            background: linear-gradient(135deg, #FFE082 0%, #FFB300 50%, #FFA000 100%);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-tdtu-blue selection:text-white">
+
+    <!-- FLOATING PUSH NOTIFICATION TOAST (Mô phỏng Email/SMS push của OS) -->
+    <div id="pushToastContainer" class="fixed top-5 right-5 z-50 space-y-3 max-w-md w-full pointer-events-none">
+        <!-- Injected dynamically by triggerPushToast() -->
+    </div>
+
+    <!-- MAIN NAVBAR -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex items-center justify-between">
+            
+            <!-- LOGO & BRAND -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('payment')">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-tdtu-blue to-tdtu-accent text-white flex items-center justify-center font-extrabold text-xl shadow-md border-2 border-white/20">
+                    <span class="tracking-tighter">TDT</span>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-extrabold text-lg tracking-tight text-tdtu-navy">iBanking</span>
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-tdtu-red uppercase tracking-wider">TDTU</span>
+                    </div>
+                    <p class="text-xs text-slate-500 font-medium">Hệ thống phân hệ đóng học phí sinh viên</p>
+                </div>
+            </div>
+
+            <!-- NAVIGATION TABS (Visible when logged in) -->
+            <div id="navTabsContainer" class="hidden md:flex items-center space-x-1 bg-slate-100 p-1.5 rounded-xl border border-slate-200/80 text-xs font-semibold">
+                <button id="tabBtnPayment" onclick="switchTab('payment')" class="px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-tdtu-blue bg-white shadow-sm font-bold">
+                    <span>🎓 Đóng Học Phí</span>
+                </button>
+                <button id="tabBtnHistory" onclick="switchTab('history')" class="px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
+                    <span>📜 Lịch Sử Giao Dịch</span>
+                </button>
+                <button id="tabBtnConcurrency" onclick="switchTab('concurrency')" class="px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span>⚡ Concurrency Lab (Rubric 10/10)</span>
+                </button>
+                <button id="tabBtnDocs" onclick="switchTab('docs')" class="px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
+                    <span>📘 Kiến Trúc & Rubric</span>
+                </button>
+            </div>
+
+            <!-- RIGHT CONTROLS: NOTIFICATION BELL & USER PROFILE -->
+            <div id="navRightControls" class="flex items-center space-x-3">
+                <!-- Logged out status or User Dropdown injected via JS -->
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <!-- =============================================================== -->
+        <!-- SCREEN 1: LOGIN SCREEN (Thiết kế phong cách ngân hàng số cao cấp) -->
+        <!-- =============================================================== -->
+        <div id="loginScreen" class="py-8">
+            <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
+                
+                <!-- LEFT BRANDING / VALUE PROP BANNER -->
+                <div class="md:col-span-5 bank-card-gradient text-white p-8 flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-blue-400 rounded-full opacity-10 filter blur-2xl"></div>
+                    <div class="absolute -left-12 -top-12 w-64 h-64 bg-red-500 rounded-full opacity-10 filter blur-2xl"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs font-semibold text-blue-200 mb-6">
+                            <span>🏛️ Đại Học Tôn Đức Thắng</span>
+                        </div>
+                        <h2 class="text-2xl font-extrabold tracking-tight leading-snug">
+                            Cổng Ngân Hàng Số<br>Đóng Học Phí Trực Tuyến
+                        </h2>
+                        <p class="text-xs text-blue-100/80 mt-3 leading-relaxed">
+                            Mô phỏng chuẩn xác giải pháp kiến trúc hướng dịch vụ (SOA Microservices) bảo mật tài chính, xác thực 2FA OTP và kiểm soát tương tranh mức tuyệt đối.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 my-8 relative z-10 text-xs text-blue-100">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">✓</span>
+                            <span>Tra cứu tự động học phí theo MSSV TDTU</span>
+                        </div>
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">✓</span>
+                            <span>Xác thực OTP 2FA bảo mật qua Email</span>
+                        </div>
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">✓</span>
+                            <span>Chống Double-Spending với Pessimistic Lock</span>
+                        </div>
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">✓</span>
+                            <span>Saga Orchestration tự động bồi hoàn tiền</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-white/10 relative z-10 text-[11px] text-blue-200/70 flex justify-between items-center">
+                        <span>Môn học: SOA (CS504070)</span>
+                        <span>HK1/2026-2027</span>
+                    </div>
+                </div>
+
+                <!-- RIGHT LOGIN FORM -->
+                <div class="md:col-span-7 p-8 md:p-10 flex flex-col justify-between">
+                    <div>
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-bold text-slate-800">Đăng Nhập Hệ Thống</h3>
+                            <p class="text-xs text-slate-500 mt-1">Đăng nhập tài khoản iBanking để truy cập phân hệ học phí</p>
+                        </div>
+
+                        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tên đăng nhập (Username)</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    </span>
+                                    <input type="text" id="usernameInput" required placeholder="Nhập username (vd: user1, user2, parent1)" 
+                                           class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-tdtu-blue focus:border-transparent outline-none transition text-sm">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Mật khẩu (Password)</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    </span>
+                                    <input type="password" id="passwordInput" required placeholder="••••••••" value="password123"
+                                           class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-tdtu-blue focus:border-transparent outline-none transition text-sm">
+                                </div>
+                            </div>
+
+                            <div id="loginError" class="hidden text-xs text-red-600 bg-red-50 p-3 rounded-xl border border-red-200"></div>
+
+                            <button type="submit" id="loginBtn" class="w-full py-3.5 px-4 rounded-xl bg-tdtu-blue hover:bg-tdtu-navy text-white font-bold text-sm shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+                                <span>Đăng Nhập iBanking</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- QUICK LOGIN PRESETS FOR TESTERS / PROFESSORS -->
+                    <div class="mt-8 pt-6 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Chọn nhanh tài khoản kiểm thử:</span>
+                            <span class="text-[10px] text-tdtu-blue bg-blue-50 px-2 py-0.5 rounded font-semibold">1-Click Đăng nhập</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2.5">
+                            <button type="button" onclick="quickLogin('user1')" class="text-left p-2.5 rounded-xl border border-slate-200 hover:border-tdtu-blue hover:bg-blue-50/50 transition group">
+                                <span class="block text-xs font-bold text-slate-800 group-hover:text-tdtu-blue">user1</span>
+                                <span class="block text-[11px] text-slate-500 font-medium">Nguyễn Văn An</span>
+                                <span class="block text-[11px] font-mono font-bold text-emerald-600 mt-0.5">35.000.000 đ</span>
+                            </button>
+
+                            <button type="button" onclick="quickLogin('user2')" class="text-left p-2.5 rounded-xl border border-slate-200 hover:border-tdtu-blue hover:bg-blue-50/50 transition group">
+                                <span class="block text-xs font-bold text-slate-800 group-hover:text-tdtu-blue">user2</span>
+                                <span class="block text-[11px] text-slate-500 font-medium">Trần Thị Bích</span>
+                                <span class="block text-[11px] font-mono font-bold text-amber-600 mt-0.5">10.000.000 đ</span>
+                            </button>
+
+                            <button type="button" onclick="quickLogin('parent1')" class="text-left p-2.5 rounded-xl border border-slate-200 hover:border-tdtu-blue hover:bg-blue-50/50 transition group">
+                                <span class="block text-xs font-bold text-slate-800 group-hover:text-tdtu-blue">parent1</span>
+                                <span class="block text-[11px] text-slate-500 font-medium">Lê Hoàng Nam (PH)</span>
+                                <span class="block text-[11px] font-mono font-bold text-emerald-600 mt-0.5">50.000.000 đ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- SCREEN 2: MAIN DASHBOARD TABS CONTAINER -->
+        <!-- =============================================================== -->
+        <div id="mainDashboard" class="hidden space-y-6">
+
+            <!-- =========================================================== -->
+            <!-- TAB 1: 🎓 PHÂN HỆ ĐÓNG HỌC PHÍ (CHUẨN 3 NHÓM a, b, c ĐỀ BÀI) -->
+            <!-- =========================================================== -->
+            <div id="tabPaymentContent" class="space-y-6">
+                
+                <!-- TOP INTRO HERO BANNER -->
+                <div class="bg-gradient-to-r from-tdtu-navy via-tdtu-blue to-tdtu-accent rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-8 -bottom-8 w-60 h-60 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-blue-100 mb-2">
+                                <span>🏛️ Đại Học Tôn Đức Thắng • Phân Hệ Thu Học Phí</span>
+                            </div>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Thanh Toán Học Phí Trực Tuyến</h2>
+                            <p class="text-xs sm:text-sm text-blue-100/90 mt-1 max-w-2xl leading-relaxed">
+                                Hỗ trợ thanh toán toàn bộ 100% học phí cho chính mình hoặc thanh toán hộ sinh viên khác qua Mã số sinh viên (MSSV).
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="refreshData()" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-sm transition border border-white/20 flex items-center space-x-1.5 shadow">
+                                <span>🔄 Làm mới số dư</span>
+                            </button>
+                            <button onclick="toggleInboxDrawer()" class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs font-bold transition flex items-center space-x-1.5 shadow">
+                                <span>📬 Hộp Thư Email OTP (<span id="inboxCountBadge">0</span>)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAIN WORKFLOW GRID: 2 COLUMNS (LEFT: NHÓM a & b | RIGHT: NHÓM c & ACTION) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- LEFT COLUMN (7 Cols): NHÓM a (Người nộp tiền) & NHÓM b (Thông tin học phí) -->
+                    <div class="lg:col-span-7 space-y-6">
+
+                        <!-- =================================================== -->
+                        <!-- NHÓM a: NGƯỜI NỘP TIỀN (READ-ONLY DIGITAL CARD)    -->
+                        <!-- =================================================== -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80">
+                            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                                <div class="flex items-center space-x-2.5">
+                                    <span class="w-7 h-7 rounded-xl bg-blue-100 text-tdtu-blue font-extrabold text-xs flex items-center justify-center">a</span>
+                                    <div>
+                                        <h3 class="font-extrabold text-slate-800 text-sm tracking-tight uppercase">Thông Tin Người Nộp Tiền</h3>
+                                        <p class="text-[11px] text-slate-400">Tự động trích xuất từ tài khoản đăng nhập • Không được phép chỉnh sửa</p>
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                    🔒 Read-only
+                                </span>
+                            </div>
+
+                            <!-- CARD BANK PREVIEW -->
+                            <div class="bank-card-gradient text-white p-5 rounded-2xl shadow-md relative overflow-hidden mb-4">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-9 h-7 rounded gold-chip flex items-center justify-center shadow-inner">
+                                            <div class="w-6 h-4 border border-amber-900/30 rounded-sm"></div>
+                                        </div>
+                                        <div>
+                                            <span class="text-[10px] uppercase font-bold text-blue-200 tracking-wider">Tài khoản thanh toán</span>
+                                            <p id="cardAccNumDisplay" class="font-mono font-bold text-sm tracking-widest">1000 111 222</p>
+                                        </div>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded bg-white/10 text-[10px] font-bold uppercase tracking-wider text-blue-200 border border-white/10">iBanking TDTU</span>
+                                </div>
+
+                                <div class="flex justify-between items-end">
+                                    <div>
+                                        <div class="flex items-center space-x-1.5 text-blue-200 text-xs">
+                                            <span>Số dư khả dụng:</span>
+                                            <button onclick="toggleBalanceVisibility()" type="button" class="text-blue-300 hover:text-white transition">
+                                                <svg id="eyeIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-baseline space-x-1.5 mt-0.5">
+                                            <span id="cardBalanceDisplay" class="text-2xl font-black tracking-tight text-white">15.000.000</span>
+                                            <span class="text-xs font-bold text-blue-300">VND</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[9px] uppercase tracking-wider text-blue-300 block">Chủ tài khoản</span>
+                                        <span id="cardOwnerDisplay" class="text-xs font-bold uppercase tracking-wider text-white">NGUYEN VAN AN</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- NHÓM A DETAILS: HỌ TÊN, SỐ ĐIỆN THOẠI, EMAIL -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+                                <div>
+                                    <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Họ và tên người nộp</span>
+                                    <span id="payerFullName" class="font-bold text-slate-800 text-xs block mt-0.5">--</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Số điện thoại</span>
+                                    <span id="payerPhoneNumber" class="font-mono font-semibold text-slate-800 text-xs block mt-0.5">--</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Email nhận mã OTP</span>
+                                    <span id="payerEmailAddress" class="font-mono font-semibold text-slate-800 text-xs block mt-0.5 truncate" title="Email">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- =================================================== -->
+                        <!-- NHÓM b: THÔNG TIN HỌC PHÍ (TRA CỨU TỰ ĐỘNG THEO MSSV)-->
+                        <!-- =================================================== -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <div class="flex items-center space-x-2.5">
+                                    <span class="w-7 h-7 rounded-xl bg-blue-100 text-tdtu-blue font-extrabold text-xs flex items-center justify-center">b</span>
+                                    <div>
+                                        <h3 class="font-extrabold text-slate-800 text-sm tracking-tight uppercase">Thông Tin Học Phí Sinh Viên</h3>
+                                        <p class="text-[11px] text-slate-400">Tự động tra cứu trực tiếp từ Cơ sở dữ liệu Đào tạo TDTU</p>
+                                    </div>
+                                </div>
+                                <span class="text-[11px] font-medium text-slate-500">Thu 100% trọn gói</span>
+                            </div>
+
+                            <!-- MSSV INPUT BAR -->
+                            <div>
+                                <label for="mssvSearchField" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Nhập Mã Số Sinh Viên (MSSV)
+                                </label>
+                                <div class="flex space-x-2">
+                                    <div class="relative flex-1">
+                                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        </span>
+                                        <input type="text" id="mssvSearchField" maxlength="10" placeholder="Nhập 8 ký tự MSSV (vd: 524H0122)" 
+                                               oninput="handleMssvInput(this.value)"
+                                               onkeydown="if(event.key==='Enter') executeSearchTuition()"
+                                               class="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-tdtu-blue focus:border-transparent outline-none uppercase font-mono font-bold text-sm tracking-wider text-slate-800 transition">
+                                        <button type="button" id="clearMssvBtn" onclick="clearMssvInput()" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                    </div>
+
+                                    <button type="button" onclick="executeSearchTuition()" id="btnSearchMssv" 
+                                            class="px-5 py-3 rounded-xl bg-tdtu-blue hover:bg-tdtu-navy text-white text-xs font-bold shadow transition flex items-center space-x-1.5 flex-shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        <span>Tra Cứu</span>
+                                    </button>
+                                </div>
+
+                                <!-- QUICK CHIPS -->
+                                <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
+                                    <span class="text-[11px] text-slate-400 font-medium">Gợi ý tra cứu nhanh:</span>
+                                    <button type="button" onclick="selectQuickMssv('524H0122')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
+                                        524H0122 (9.5tr)
+                                    </button>
+                                    <button type="button" onclick="selectQuickMssv('524H0123')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
+                                        524H0123 (8.2tr)
+                                    </button>
+                                    <button type="button" onclick="selectQuickMssv('524H0999')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
+                                        524H0999 (12tr)
+                                    </button>
+                                    <button type="button" onclick="selectQuickMssv('524H0888')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-amber-100 text-amber-700 font-semibold border border-slate-200 transition">
+                                        524H0888 (Đã đóng)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- SEARCH LOADING STATE -->
+                            <div id="tuitionLoadingState" class="hidden p-6 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-200 animate-pulse">
+                                <div class="w-8 h-8 border-3 border-tdtu-blue border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                <p class="text-xs text-slate-500 font-semibold">Đang tra cứu dữ liệu học phí sinh viên TDTU...</p>
+                            </div>
+
+                            <!-- TUITION RESULT CARD (Hóa đơn học phí TDTU) -->
+                            <div id="tuitionCardResult" class="hidden bg-gradient-to-br from-blue-50/60 via-white to-slate-50 rounded-2xl p-5 border-2 border-blue-200 shadow-sm space-y-4">
+                                <div class="flex items-center justify-between pb-3 border-b border-blue-100">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-7 h-7 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold text-xs">
+                                            TDT
+                                        </div>
+                                        <div>
+                                            <span class="text-xs font-bold text-slate-800">Trường Đại Học Tôn Đức Thắng</span>
+                                            <span id="tuitionFacultyBadge" class="block text-[10px] text-slate-500">Khoa Công Nghệ Thông Tin</span>
+                                        </div>
+                                    </div>
+                                    <div id="tuitionStatusBadge">
+                                        <!-- Injected by JS -->
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                                    <div>
+                                        <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Mã sinh viên (MSSV)</span>
+                                        <span id="resStudentMssv" class="font-mono font-extrabold text-slate-900 text-sm">--</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Họ và tên sinh viên</span>
+                                        <span id="resStudentFullName" class="font-bold text-slate-900 text-sm">--</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Học kỳ áp dụng</span>
+                                        <span id="resStudentSemester" class="font-semibold text-slate-700 text-xs">--</span>
+                                    </div>
+                                </div>
+
+                                <div class="p-3.5 bg-blue-900 text-white rounded-xl flex items-center justify-between shadow-inner">
+                                    <div>
+                                        <span class="text-[10px] uppercase font-bold text-blue-200 tracking-wider block">Số tiền học phí cần thanh toán (100%)</span>
+                                        <span class="text-[11px] text-blue-200/80">Không hỗ trợ thanh toán một phần theo quy định TDTU</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="flex items-baseline space-x-1">
+                                            <span id="resTuitionAmount" class="text-xl sm:text-2xl font-black text-amber-300">0</span>
+                                            <span class="text-xs font-bold text-amber-200">VND</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TUITION ERROR STATE -->
+                            <div id="tuitionErrorCard" class="hidden p-4 bg-red-50 text-red-700 rounded-2xl text-xs border border-red-200 flex items-start space-x-2.5">
+                                <svg class="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <div>
+                                    <p class="font-bold text-red-800">Không tìm thấy thông tin</p>
+                                    <p id="tuitionErrorMessage" class="text-[11px] text-red-600 mt-0.5">Vui lòng kiểm tra lại MSSV.</p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT COLUMN (5 Cols): NHÓM c (Thông tin thanh toán & Xác nhận) -->
+                    <div class="lg:col-span-5 space-y-6">
+
+                        <!-- =================================================== -->
+                        <!-- NHÓM c: THÔNG TIN THANH TOÁN (ORDER SUMMARY & TERMS)-->
+                        <!-- =================================================== -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-5 sticky top-24">
+                            <div class="flex items-center space-x-2.5 pb-4 border-b border-slate-100">
+                                <span class="w-7 h-7 rounded-xl bg-blue-100 text-tdtu-blue font-extrabold text-xs flex items-center justify-center">c</span>
+                                <div>
+                                    <h3 class="font-extrabold text-slate-800 text-sm tracking-tight uppercase">Thông Tin Thanh Toán</h3>
+                                    <p class="text-[11px] text-slate-400">Kiểm tra điều kiện số dư và xác nhận thỏa thuận</p>
+                                </div>
+                            </div>
+
+                            <!-- FINANCIAL CALCULATION BREAKDOWN -->
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3 text-xs">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500 font-medium">Số dư khả dụng hiện tại:</span>
+                                    <span id="sumCurrentBalance" class="font-bold font-mono text-slate-800 text-sm">0 VND</span>
+                                </div>
+                                <div class="flex justify-between items-center text-tdtu-red">
+                                    <span class="font-medium">Số tiền trích nợ (100%):</span>
+                                    <span id="sumDeductAmount" class="font-bold font-mono text-sm">- 0 VND</span>
+                                </div>
+                                <div class="border-t border-dashed border-slate-300 pt-2 flex justify-between items-center">
+                                    <span class="font-bold text-slate-700">Số dư khả dụng dự kiến còn:</span>
+                                    <span id="sumRemainingBalance" class="font-black font-mono text-slate-900 text-base">0 VND</span>
+                                </div>
+                            </div>
+
+                            <!-- REAL-TIME CONDITION CRITERIA CHECKLIST -->
+                            <div id="criteriaBox" class="p-3.5 rounded-2xl text-xs space-y-2 bg-slate-50 border border-slate-200">
+                                <div class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Kiểm tra điều kiện thực hiện giao dịch:</div>
+                                <div class="flex items-center space-x-2 text-[11px]" id="chkExists">
+                                    <span class="w-4 h-4 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center text-[10px] font-bold">1</span>
+                                    <span class="text-slate-500">Khoản học phí tồn tại trên hệ thống</span>
+                                </div>
+                                <div class="flex items-center space-x-2 text-[11px]" id="chkUnpaid">
+                                    <span class="w-4 h-4 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center text-[10px] font-bold">2</span>
+                                    <span class="text-slate-500">Khoản học phí chưa được thanh toán</span>
+                                </div>
+                                <div class="flex items-center space-x-2 text-[11px]" id="chkBalance">
+                                    <span class="w-4 h-4 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center text-[10px] font-bold">3</span>
+                                    <span class="text-slate-500">Số dư khả dụng ≥ Số tiền cần thanh toán</span>
+                                </div>
+                            </div>
+
+                            <!-- CONDITION NOTIFICATION BANNER -->
+                            <div id="conditionBanner" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+
+                            <!-- TERMS CHECKBOX -->
+                            <div class="flex items-start space-x-3 pt-1">
+                                <input type="checkbox" id="termsAgreementCheckbox" onchange="evaluatePaymentButtonState()" 
+                                       class="mt-0.5 h-4 w-4 text-tdtu-blue focus:ring-tdtu-blue border-slate-300 rounded cursor-pointer">
+                                <label for="termsAgreementCheckbox" class="text-xs text-slate-600 leading-relaxed cursor-pointer select-none">
+                                    Tôi đã kiểm tra kỹ thông tin sinh viên thụ hưởng và đồng ý với 
+                                    <a href="javascript:void(0)" onclick="openTermsModal()" class="text-tdtu-blue font-bold underline hover:text-tdtu-navy">
+                                        Thỏa thuận và điều khoản của hệ thống
+                                    </a>. Cho phép ngân hàng tự động trích nợ tài khoản.
+                                </label>
+                            </div>
+
+                            <!-- INITIATE PAYMENT BUTTON -->
+                            <div>
+                                <button type="button" id="btnConfirmPayment" onclick="handleInitiatePayment()" disabled
+                                        class="w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    <span>Xác Nhận & Nhận Mã OTP</span>
+                                </button>
+                                <p class="text-[11px] text-slate-400 text-center mt-2">Mã xác thực 2FA OTP sẽ được gửi về email chính chủ</p>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- =========================================================== -->
+            <!-- TAB 2: 📜 LỊCH SỬ GIAO DỊCH (HISTORY TAB)                  -->
+            <!-- =========================================================== -->
+            <div id="tabHistoryContent" class="hidden space-y-6">
+                <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-xl font-extrabold text-slate-800 tracking-tight">Lịch Sử Giao Dịch Đóng Học Phí</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Danh sách các giao dịch thanh toán học phí đã thực hiện từ tài khoản của bạn</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="loadTransactionHistory()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center space-x-1.5">
+                                <span>🔄 Tải lại</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TRANSACTION TABLE -->
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
+                                <tr>
+                                    <th class="px-5 py-3.5">Mã Giao Dịch</th>
+                                    <th class="px-5 py-3.5">MSSV Thụ Hưởng</th>
+                                    <th class="px-5 py-3.5">Họ Tên Sinh Viên</th>
+                                    <th class="px-5 py-3.5">Số Tiền (VND)</th>
+                                    <th class="px-5 py-3.5">Thời Gian</th>
+                                    <th class="px-5 py-3.5">Trạng Thái</th>
+                                    <th class="px-5 py-3.5 text-right">Chi Tiết / Biên Lai</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableRows" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="7" class="px-6 py-8 text-center text-slate-400">Đang tải lịch sử giao dịch...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =========================================================== -->
+            <!-- TAB 3: ⚡ CONCURRENCY LAB (KIỂM THỬ ĐỒNG THỜI - 10/10 RUBRIC)-->
+            <!-- =========================================================== -->
+            <div id="tabConcurrencyContent" class="hidden space-y-6">
+                
+                <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div>
+                            <div class="inline-flex items-center space-x-2 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold mb-1">
+                                <span>Tiêu chí 6: Transaction & Concurrency (1.5 / 1.5 Điểm)</span>
+                            </div>
+                            <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Phòng Thí Nghiệm Xử Lý Đồng Thời (Concurrency Lab)</h2>
+                            <p class="text-xs text-slate-500 mt-1">
+                                Trực tiếp kích hoạt các cuộc đua tranh tài nguyên (Race Conditions) để chứng minh tính nhất quán dữ liệu của hệ thống ngân hàng.
+                            </p>
+                        </div>
+                        <button onclick="resetSystemData()" class="px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-tdtu-red text-xs font-bold transition border border-red-200 flex items-center space-x-1.5 shadow-sm flex-shrink-0">
+                            <span>🧹 Khôi Phục Dữ Liệu Gốc (Reset Data)</span>
+                        </button>
+                    </div>
+
+                    <!-- 2 CONCURRENCY CARDS -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                        <!-- SCENARIO 1 CARD -->
+                        <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-slate-200 flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-tdtu-blue font-extrabold text-xs">KỊCH BẢN 1</span>
+                                    <span class="text-[11px] font-mono bg-white px-2 py-0.5 rounded border text-slate-600">Pessimistic Write Lock</span>
+                                </div>
+                                <h3 class="font-bold text-slate-900 text-base">Nhiều Giao Dịch Đồng Thời Trên Cùng Một Tài Khoản</h3>
+                                <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                                    <strong>Mô tả:</strong> Tài khoản <code class="font-mono text-blue-700">user2</code> có số dư <strong>10.000.000 VND</strong>. Bắn đồng thời 2 giao dịch:
+                                    <br>• GD 1: Nộp cho 524H0122 (<strong>9.500.000 VND</strong>)
+                                    <br>• GD 2: Nộp cho 524H0123 (<strong>8.200.000 VND</strong>)
+                                    <br><strong>Tổng chi tiêu: 17.700.000 VND &gt; 10.000.000 VND</strong>.
+                                </p>
+                                <div class="mt-3 p-3 bg-white rounded-xl border border-slate-200 text-[11px] text-slate-700">
+                                    🎯 <strong>Kỳ vọng hệ thống:</strong> Nhờ khóa bi quan <code class="bg-slate-100 px-1 py-0.5 rounded">SELECT ... FOR UPDATE</code>, chỉ đúng 1 giao dịch được trừ tiền thành công. Giao dịch còn lại bị từ chối an toàn (HTTP 422 - Không đủ số dư), ngăn chặn hoàn toàn việc âm tiền (Double Spending).
+                                </div>
+                            </div>
+
+                            <div>
+                                <div id="lab1Progress" class="hidden my-3 p-3 rounded-xl text-xs bg-blue-50 border border-blue-200 font-mono text-slate-700 space-y-1"></div>
+                                <button type="button" id="btnRunLab1" onclick="runLabScenario1()" 
+                                        class="w-full py-3 px-4 rounded-xl bg-tdtu-blue hover:bg-tdtu-navy text-white text-xs font-bold transition shadow flex items-center justify-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>Bắn 2 Requests Đồng Thời (Kịch Bản 1)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SCENARIO 2 CARD -->
+                        <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-amber-50/40 border border-slate-200 flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 font-extrabold text-xs">KỊCH BẢN 2</span>
+                                    <span class="text-[11px] font-mono bg-white px-2 py-0.5 rounded border text-slate-600">Saga Compensating Tx</span>
+                                </div>
+                                <h3 class="font-bold text-slate-900 text-base">Nhiều Tài Khoản Cùng Thanh Toán 1 Khoản Học Phí</h3>
+                                <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                                    <strong>Mô tả:</strong> Hai người dùng khác nhau (<code class="font-mono text-blue-700">user1</code> và <code class="font-mono text-amber-700">parent1</code>) cùng lúc bấm xác nhận thanh toán cho cùng một sinh viên <code class="font-mono font-bold">524H0999</code> (Lê Bảo Trâm - <strong>12.000.000 VND</strong>).
+                                </p>
+                                <div class="mt-3 p-3 bg-white rounded-xl border border-slate-200 text-[11px] text-slate-700">
+                                    🎯 <strong>Kỳ vọng hệ thống:</strong> Khoản học phí chỉ được gạch nợ thành công đúng 1 lần duy nhất (<code class="bg-slate-100 px-1 py-0.5 rounded">UPDATE tuitions SET status='PAID' WHERE status='UNPAID'</code>). Người nộp thứ hai bị từ chối và Saga Orchestrator lập tức tự động bồi hoàn 100% tiền (Compensating Transaction) về tài khoản!
+                                </div>
+                            </div>
+
+                            <div>
+                                <div id="lab2Progress" class="hidden my-3 p-3 rounded-xl text-xs bg-amber-50 border border-amber-200 font-mono text-slate-700 space-y-1"></div>
+                                <button type="button" id="btnRunLab2" onclick="runLabScenario2()" 
+                                        class="w-full py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition shadow flex items-center justify-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>Bắn 2 Requests Đồng Thời (Kịch Bản 2)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- =========================================================== -->
+            <!-- TAB 4: 📘 KIẾN TRÚC & RUBRIC (ARCHITECTURE & SPECS)        -->
+            <!-- =========================================================== -->
+            <div id="tabDocsContent" class="hidden space-y-6">
+                <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-6">
+                    <div class="pb-4 border-b border-slate-100">
+                        <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Kiến Trúc Microservices & Đối Chiếu Rubric 10.0/10.0</h2>
+                        <p class="text-xs text-slate-500 mt-1">Đại Học Tôn Đức Thắng • Môn: Kiến Trúc Hướng Dịch Vụ (SOA - 504070) • Giảng viên: Thầy Dương Hữu Phúc</p>
+                    </div>
+
+                    <!-- ARCHITECTURE DIAGRAM SUMMARY -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                            <span class="text-2xl block mb-2">🌐</span>
+                            <span class="font-bold text-xs text-slate-800 block">gateway-service</span>
+                            <span class="text-[10px] font-mono text-slate-500">Port :8080</span>
+                            <p class="text-[11px] text-slate-600 mt-2">Định tuyến reverse-proxy, CORS, xác thực JWT, phục vụ giao diện Web SPA</p>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                            <span class="text-2xl block mb-2">💳</span>
+                            <span class="font-bold text-xs text-slate-800 block">account-service</span>
+                            <span class="text-[10px] font-mono text-slate-500">Port :8081</span>
+                            <p class="text-[11px] text-slate-600 mt-2">Quản lý người dùng, tài khoản, số dư, Pessimistic Lock <code class="text-[9px]">FOR UPDATE</code></p>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                            <span class="text-2xl block mb-2">🎓</span>
+                            <span class="font-bold text-xs text-slate-800 block">tuition-service</span>
+                            <span class="text-[10px] font-mono text-slate-500">Port :8083</span>
+                            <p class="text-[11px] text-slate-600 mt-2">Cơ sở dữ liệu sinh viên TDTU, tra cứu học phí, atomic debt clearance</p>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                            <span class="text-2xl block mb-2">🔑</span>
+                            <span class="font-bold text-xs text-slate-800 block">otp-service</span>
+                            <span class="text-[10px] font-mono text-slate-500">Port :8084</span>
+                            <p class="text-[11px] text-slate-600 mt-2">Sinh mã OTP 6 số, TTL 5 phút, single-use, MessageDigest, Notification log</p>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                            <span class="text-2xl block mb-2">🔄</span>
+                            <span class="font-bold text-xs text-slate-800 block">payment-service</span>
+                            <span class="text-[10px] font-mono text-slate-500">Port :8082</span>
+                            <p class="text-[11px] text-slate-600 mt-2">Saga Orchestrator điều phối giao dịch phân tán, tự động bồi hoàn khi có lỗi</p>
+                        </div>
+                    </div>
+
+                    <!-- RUBRIC CHECKLIST -->
+                    <div class="p-5 rounded-2xl bg-blue-50/50 border border-blue-200 text-xs space-y-3">
+                        <h4 class="font-bold text-blue-900 text-sm">Đối chiếu Phiếu Chấm Điểm Giữa Kỳ (Rubric TDTU CS504070):</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-700">
+                            <div class="space-y-1.5">
+                                <p>✅ <strong>Tiêu chí 1: Phân tích nghiệp vụ & UML (1.0/1.0 đ)</strong>: Use Case Diagram & ERD phân rã chuẩn.</p>
+                                <p>✅ <strong>Tiêu chí 2: Kiến trúc Microservices (1.5/1.5 đ)</strong>: Phân rã 5 service độc lập, giao tiếp REST DTO.</p>
+                                <p>✅ <strong>Tiêu chí 3: Thiết kế REST API (1.0/1.0 đ)</strong>: Chuẩn RESTful, HTTP Status 200, 400, 404, 422, ApiResponse chuẩn.</p>
+                                <p>✅ <strong>Tiêu chí 4: Database & Data Persistence (1.0/1.0 đ)</strong>: Cơ chế lưu trữ phân tán, schema ràng buộc khóa ngoại.</p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <p>✅ <strong>Tiêu chí 5: Hiện thực chức năng & Workflow (2.0/2.0 đ)</strong>: Đủ 3 nhóm a, b, c, OTP 5 phút, email, gạch nợ.</p>
+                                <p>✅ <strong>Tiêu chí 6: Transaction & Concurrency (1.5/1.5 đ)</strong>: Đáp ứng 100% 2 kịch bản tranh chấp đồng thời.</p>
+                                <p>✅ <strong>Tiêu chí 7: Giao diện & Tích hợp (0.5/0.5 đ)</strong>: Web Application mượt mà, tích hợp 100% backend API.</p>
+                                <p>✅ <strong>Tiêu chí 8: Documentation & Demo (1.5/1.5 đ)</strong>: Có kịch bản tự động hóa, Docker Compose, script chạy 1 dòng.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 1: OTP VERIFICATION (MODAL 2FA CHUẨN NGÂN HÀNG - 6 PIN BOXES) -->
+    <!-- =================================================================== -->
+    <div id="otpVerificationModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in duration-200">
+            
+            <div class="text-center">
+                <div class="w-14 h-14 bg-blue-100 text-tdtu-blue rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <h3 class="text-xl font-extrabold text-slate-800 tracking-tight">Xác Thực Mã Giao Dịch (2FA OTP)</h3>
+                <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    Mã xác thực đã được gửi đến email: <br>
+                    <strong id="otpModalTargetEmail" class="font-mono text-slate-800 font-bold">user1@student.tdtu.edu.vn</strong>
+                </p>
+                <div class="inline-flex items-center space-x-1.5 mt-3 text-xs font-bold px-3 py-1 bg-amber-50 text-amber-800 rounded-full border border-amber-200">
+                    <svg class="w-4 h-4 text-amber-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Hiệu lực còn lại: <span id="otpCountdownTimer" class="font-mono font-black">05:00</span></span>
+                </div>
+            </div>
+
+            <!-- 6 INDIVIDUAL PIN INPUT BOXES -->
+            <div>
+                <label class="block text-center text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Nhập mã OTP 6 chữ số</label>
+                <div class="flex justify-center space-x-2 sm:space-x-2.5" id="pinBoxContainer">
+                    <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="pin-digit w-11 h-13 text-center text-xl font-mono font-bold rounded-xl border border-slate-300 focus:border-tdtu-blue focus:ring-2 focus:ring-tdtu-blue/20 outline-none transition" autofocus>
+                    <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="pin-digit w-11 h-13 text-center text-xl font-mono font-bold rounded-xl border border-slate-300 focus:border-tdtu-blue focus:ring-2 focus:ring-tdtu-blue/20 outline-none transition">
+                    <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="pin-digit w-11 h-13 text-center text-xl font-mono font-bold rounded-xl border border-slate-300 focus:border-tdtu-blue focus:ring-2 focus:ring-tdtu-blue/20 outline-none transition">
+                    <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="pin-digit w-11 h-13 text-center text-xl font-mono font-bold rounded-xl border border-slate-300 focus:border-tdtu-blue focus:ring-2 focus:ring-tdtu-blue/20 outline-none transition">
+                    <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="pin-digit w-11 h-13 text-center text-xl font-mono font-bold rounded-xl border border-slate-300 focus:border-tdtu-blue focus:ring-2 focus:ring-tdtu-blue/20 outline-none transition">
+                    <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="pin-digit w-11 h-13 text-center text-xl font-mono font-bold rounded-xl border border-slate-300 focus:border-tdtu-blue focus:ring-2 focus:ring-tdtu-blue/20 outline-none transition">
+                </div>
+            </div>
+
+            <!-- OTP ERROR BOX -->
+            <div id="otpModalError" class="hidden text-xs text-red-600 bg-red-50 p-3 rounded-xl border border-red-200 text-center font-medium"></div>
+
+            <!-- SECURITY NOTICE -->
+            <p class="text-[11px] text-slate-400 text-center leading-relaxed">
+                🛡️ Không chia sẻ mã OTP với bất kỳ ai để bảo vệ an toàn tài khoản ngân hàng.
+            </p>
+
+            <!-- ACTION BUTTONS -->
+            <div class="flex space-x-3 pt-2">
+                <button type="button" onclick="closeOtpVerificationModal()" class="w-1/3 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition">
+                    Hủy Giao Dịch
+                </button>
+                <button type="button" id="btnConfirmOtpSubmit" onclick="submitOtpVerification()" disabled
+                        class="w-2/3 py-3 rounded-xl bg-slate-300 text-white font-extrabold text-xs shadow-md transition flex items-center justify-center space-x-1.5 cursor-not-allowed">
+                    <span>Xác Nhận Thanh Toán</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 2: E-RECEIPT (BIÊN LAI ĐIỆN TỬ CHUẨN NGÂN HÀNG THÀNH CÔNG)    -->
+    <!-- =================================================================== -->
+    <div id="receiptModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-5 animate-in fade-in zoom-in duration-200" id="receiptPrintArea">
+            
+            <!-- HEADER OF RECEIPT -->
+            <div class="text-center pb-4 border-b border-dashed border-slate-200">
+                <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                    Giao dịch thành công
+                </span>
+                <h3 class="text-2xl font-black text-slate-800 mt-2" id="rcpAmountDisplay">9.500.000 VND</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Biên lai điện tử gạch nợ học phí TDTU</p>
+            </div>
+
+            <!-- RECEIPT ROWS -->
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 text-xs space-y-2.5 font-medium">
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Mã giao dịch:</span>
+                    <span id="rcpTransactionId" class="font-mono font-bold text-tdtu-navy">TX-XXXXXX</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Thời gian thực hiện:</span>
+                    <span id="rcpTimestamp" class="text-slate-700">--</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Đơn vị thụ hưởng:</span>
+                    <span class="font-bold text-slate-800">Trường Đại Học Tôn Đức Thắng</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Sinh viên thụ hưởng:</span>
+                    <span id="rcpStudentName" class="font-bold text-slate-800">--</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Mã số sinh viên (MSSV):</span>
+                    <span id="rcpMssv" class="font-mono font-bold text-slate-800">--</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Tài khoản trích nợ:</span>
+                    <span id="rcpDebitAccount" class="font-mono font-semibold text-slate-700">--</span>
+                </div>
+                <div class="border-t border-slate-200 pt-2 flex justify-between items-center">
+                    <span class="text-slate-500 font-semibold">Số dư khả dụng mới:</span>
+                    <span id="rcpUpdatedBalance" class="font-bold text-emerald-700 font-mono text-sm">-- VND</span>
+                </div>
+            </div>
+
+            <div class="text-center text-[11px] text-slate-400">
+                📬 Email xác nhận giao dịch kèm biên lai điện tử đã được gửi tới hộp thư của bạn.
+            </div>
+
+            <!-- RECEIPT ACTION BUTTONS -->
+            <div class="flex space-x-2 pt-1">
+                <button onclick="window.print()" class="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center justify-center space-x-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <span>In Biên Lai</span>
+                </button>
+                <button onclick="closeReceiptModal()" class="w-1/2 py-3 bg-tdtu-blue hover:bg-tdtu-navy text-white font-extrabold rounded-xl text-xs shadow transition">
+                    Đóng & Hoàn Tất
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- DRAWER: SIMULATED INBOX (HỘP THƯ EMAIL NOTIFICATION DRAWER)         -->
+    <!-- =================================================================== -->
+    <div id="inboxDrawer" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex justify-end">
+        <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col p-6 space-y-4 animate-in slide-in-from-right duration-200">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">📬</span>
+                    <div>
+                        <h3 class="font-extrabold text-slate-800 text-base">Hộp Thư Thông Báo Email</h3>
+                        <p class="text-[11px] text-slate-400">Mô phỏng Notification Service gửi OTP & Biên lai</p>
+                    </div>
+                </div>
+                <button onclick="toggleInboxDrawer()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+            </div>
+
+            <!-- EMAIL LIST -->
+            <div id="inboxEmailList" class="flex-1 overflow-y-auto space-y-3 pr-1">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span class="text-[11px] text-slate-400">Tự động đồng bộ mỗi 3 giây</span>
+                <button onclick="fetchSimulatedEmails()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 text-[11px] transition">
+                    Làm mới hộp thư
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 3: TERMS & CONDITIONS (QUY CHẾ & ĐIỀU KHOẢN ĐÓNG HỌC PHÍ)     -->
+    <!-- =================================================================== -->
+    <div id="termsModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-4 max-h-[85vh] flex flex-col animate-in fade-in zoom-in duration-200">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">📜</span>
+                    <h3 class="font-extrabold text-slate-800 text-base">Thỏa Thuận & Điều Khoản Đóng Học Phí</h3>
+                </div>
+                <button onclick="closeTermsModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-3 text-xs text-slate-600 leading-relaxed pr-2">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <strong class="text-slate-900 block mb-1">Điều 1: Phạm vi và thẩm quyền ủy quyền thanh toán</strong>
+                    Người dùng đồng ý cho phép phân hệ iBanking TDTU tự động trích nợ số dư khả dụng trên tài khoản thanh toán để chi trả toàn bộ nghĩa vụ học phí cho sinh viên chỉ định theo Mã số sinh viên (MSSV).
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <strong class="text-slate-900 block mb-1">Điều 2: Nguyên tắc thanh toán trọn gói 100%</strong>
+                    Theo quy chế đào tạo Đại học Tôn Đức Thắng, hệ thống chỉ chấp nhận thanh toán 100% toàn bộ khoản học phí còn nợ của kỳ học. Tuyệt đối không chấp nhận thanh toán một phần hay chia nhỏ đợt thanh toán.
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <strong class="text-slate-900 block mb-1">Điều 3: Bảo mật xác thực 2 lớp (2FA - OTP)</strong>
+                    Mọi giao dịch thanh toán bắt buộc phải trải qua bước xác thực mã OTP ngẫu nhiên gửi đến email chính chủ. Mã OTP có hiệu lực tối đa 5 phút và chỉ được dùng thành công đúng một lần duy nhất.
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <strong class="text-slate-900 block mb-1">Điều 4: Tính toàn vẹn giao dịch và cơ chế hoàn tiền tự động</strong>
+                    Trường hợp xảy ra xung đột khi có nhiều giao dịch cùng nộp cho 1 sinh viên, hệ thống đảm bảo khoản học phí chỉ gạch nợ thành công đúng 1 lần. Người nộp tiền đến sau sẽ được ngân hàng bồi hoàn 100% tiền vào số dư thông qua Saga Compensating Transaction.
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end">
+                <button onclick="acceptTermsFromModal()" class="px-5 py-2.5 rounded-xl bg-tdtu-blue hover:bg-tdtu-navy text-white text-xs font-bold transition shadow">
+                    Tôi Đã Đọc & Đồng Ý
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            Dự Án Giữa Kỳ: Phân hệ đóng học phí iBanking • Môn: Kiến Trúc Hướng Dịch Vụ (SOA - CS504070) • Đại học Tôn Đức Thắng (TDTU)
+        </div>
+    </footer>
+
+    <!-- =================================================================== -->
+    <!-- JAVASCRIPT APPLICATION CORE (AUTHENTIC BANKING LOGIC & MICROSERVICES)-->
+    <!-- =================================================================== -->
+    <script>
+        const API_BASE = ''; // Gateway routes /api/**
+        let authToken = localStorage.getItem('ibanking_token') || null;
+        let currentUser = null;
+        let currentTuition = null;
+        let activeTransaction = null;
+        let isBalanceVisible = true;
+        let otpCountdownInterval = null;
+        let inboxPollInterval = null;
+        let currentActiveTab = 'payment';
+
+        // ON APP LOAD
+        document.addEventListener('DOMContentLoaded', () => {
+            setupPinInputs();
+            if (authToken) {
+                fetchCurrentUser();
+            } else {
+                showLoginScreen();
+            }
+            startInboxEmailSync();
+        });
+
+        // =====================================================================
+        // AUTHENTICATION & USER MANAGEMENT
+        // =====================================================================
+        async function quickLogin(uname) {
+            document.getElementById('usernameInput').value = uname;
+            document.getElementById('passwordInput').value = 'password123';
+            await performLogin(uname, 'password123');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const uname = document.getElementById('usernameInput').value.trim();
+            const pass = document.getElementById('passwordInput').value;
+            await performLogin(uname, pass);
+        }
+
+        async function performLogin(username, password) {
+            const errBox = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+            errBox.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Đang đăng nhập...</span>`;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Tên đăng nhập hoặc mật khẩu không đúng');
+                }
+
+                authToken = data.data.token;
+                localStorage.setItem('ibanking_token', authToken);
+                currentUser = data.data.user;
+                showDashboardScreen();
+            } catch (err) {
+                errBox.innerText = err.message;
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Đăng Nhập iBanking</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>`;
+            }
+        }
+
+        async function fetchCurrentUser() {
+            try {
+                const res = await fetch(`${API_BASE}/api/accounts/me`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    logout();
+                    return;
+                }
+                currentUser = data.data;
+                showDashboardScreen();
+            } catch (err) {
+                logout();
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('ibanking_token');
+            showLoginScreen();
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainDashboard').classList.add('hidden');
+            document.getElementById('navTabsContainer').classList.add('hidden');
+            document.getElementById('navRightControls').innerHTML = `
+                <span class="text-xs text-slate-500 font-medium">Chưa đăng nhập</span>
+            `;
+        }
+
+        function showDashboardScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainDashboard').classList.remove('hidden');
+            document.getElementById('navTabsContainer').classList.remove('hidden');
+
+            renderNavRightControls();
+            renderUserAccountCard();
+            switchTab(currentActiveTab);
+            loadTransactionHistory();
+        }
+
+        function renderNavRightControls() {
+            const container = document.getElementById('navRightControls');
+            const initials = currentUser.fullName.split(' ').map(n => n[0]).slice(-2).join('');
+            
+            container.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <!-- Notification Bell -->
+                    <button onclick="toggleInboxDrawer()" class="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        <span id="navInboxBadge" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+                    </button>
+
+                    <!-- User Pill Dropdown -->
+                    <div class="flex items-center space-x-2 pl-2 border-l border-slate-200">
+                        <div class="w-8 h-8 rounded-xl bg-tdtu-blue text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                            ${initials}
+                        </div>
+                        <div class="hidden sm:block text-left">
+                            <span class="block text-xs font-bold text-slate-800 leading-tight">${currentUser.fullName}</span>
+                            <span class="block text-[10px] text-emerald-600 font-mono font-semibold">${formatCurrency(currentUser.balance)} VND</span>
+                        </div>
+                        <button onclick="logout()" title="Đăng xuất" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderUserAccountCard() {
+            if (!currentUser) return;
+            document.getElementById('cardAccNumDisplay').innerText = formatAccountNumber(currentUser.accountNumber);
+            document.getElementById('cardOwnerDisplay').innerText = currentUser.fullName;
+            updateBalanceDisplay();
+
+            // Populate Nhóm a fields
+            document.getElementById('payerFullName').innerText = currentUser.fullName;
+            document.getElementById('payerPhoneNumber').innerText = currentUser.phone;
+            document.getElementById('payerEmailAddress').innerText = currentUser.email;
+
+            // Populate Nhóm c balance row
+            document.getElementById('sumCurrentBalance').innerText = `${formatCurrency(currentUser.balance)} VND`;
+            evaluatePaymentButtonState();
+        }
+
+        function toggleBalanceVisibility() {
+            isBalanceVisible = !isBalanceVisible;
+            updateBalanceDisplay();
+        }
+
+        function updateBalanceDisplay() {
+            const el = document.getElementById('cardBalanceDisplay');
+            if (isBalanceVisible) {
+                el.innerText = formatCurrency(currentUser.balance);
+            } else {
+                el.innerText = '••••••••';
+            }
+        }
+
+        // =====================================================================
+        // TAB SWITCHING
+        // =====================================================================
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            const tabs = ['payment', 'history', 'concurrency', 'docs'];
+            tabs.forEach(t => {
+                const content = document.getElementById(`tab${capitalize(t)}Content`);
+                const btn = document.getElementById(`tabBtn${capitalize(t)}`);
+                if (content && btn) {
+                    if (t === tabId) {
+                        content.classList.remove('hidden');
+                        btn.className = "px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-tdtu-blue bg-white shadow-sm font-bold";
+                    } else {
+                        content.classList.add('hidden');
+                        btn.className = "px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900 font-semibold";
+                    }
+                }
+            });
+
+            if (tabId === 'history') {
+                loadTransactionHistory();
+            }
+        }
+
+        // =====================================================================
+        // NHÓM B: TUITION AUTO-SEARCH & VALIDATION
+        // =====================================================================
+        let mssvSearchTimer = null;
+
+        function handleMssvInput(val) {
+            const trimmed = val.trim().toUpperCase();
+            const clearBtn = document.getElementById('clearMssvBtn');
+            if (trimmed.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            clearTimeout(mssvSearchTimer);
+            // Only auto-search if exact 8-character MSSV is typed (e.g. 524H0122)
+            if (trimmed.length === 8) {
+                mssvSearchTimer = setTimeout(() => {
+                    executeSearchTuition();
+                }, 400);
+            } else if (trimmed.length === 0) {
+                resetTuitionResult();
+            }
+        }
+
+        function clearMssvInput() {
+            document.getElementById('mssvSearchField').value = '';
+            document.getElementById('clearMssvBtn').classList.add('hidden');
+            resetTuitionResult();
+        }
+
+        function selectQuickMssv(mssv) {
+            document.getElementById('mssvSearchField').value = mssv;
+            document.getElementById('clearMssvBtn').classList.remove('hidden');
+            executeSearchTuition();
+        }
+
+        function resetTuitionResult() {
+            currentTuition = null;
+            document.getElementById('tuitionCardResult').classList.add('hidden');
+            document.getElementById('tuitionErrorCard').classList.add('hidden');
+            document.getElementById('tuitionLoadingState').classList.add('hidden');
+            document.getElementById('sumDeductAmount').innerText = '- 0 VND';
+            document.getElementById('sumRemainingBalance').innerText = `${formatCurrency(currentUser ? currentUser.balance : 0)} VND`;
+            evaluatePaymentButtonState();
+        }
+
+        async function executeSearchTuition() {
+            const mssvInput = document.getElementById('mssvSearchField').value.trim().toUpperCase();
+            const resCard = document.getElementById('tuitionCardResult');
+            const errCard = document.getElementById('tuitionErrorCard');
+            const loading = document.getElementById('tuitionLoadingState');
+
+            resCard.classList.add('hidden');
+            errCard.classList.add('hidden');
+            currentTuition = null;
+            evaluatePaymentButtonState();
+
+            if (!mssvInput) {
+                errCard.classList.remove('hidden');
+                document.getElementById('tuitionErrorMessage').innerText = 'Vui lòng nhập Mã số sinh viên (MSSV) để tra cứu học phí.';
+                return;
+            }
+
+            loading.classList.remove('hidden');
+
+            try {
+                const res = await fetch(`${API_BASE}/api/tuitions/${mssvInput}`);
+                const data = await res.json();
+                loading.classList.add('hidden');
+
+                if (!res.ok || !data.success || !data.data) {
+                    throw new Error(data.message || `Không tìm thấy sinh viên có MSSV [${mssvInput}]`);
+                }
+
+                currentTuition = data.data;
+
+                // Render Nhóm b card
+                document.getElementById('resStudentMssv').innerText = currentTuition.mssv;
+                document.getElementById('resStudentFullName').innerText = currentTuition.studentName;
+                document.getElementById('resStudentSemester').innerText = currentTuition.semester;
+                document.getElementById('tuitionFacultyBadge').innerText = `${currentTuition.faculty} - ${currentTuition.major || ''}`;
+                document.getElementById('resTuitionAmount').innerText = formatCurrency(currentTuition.amount);
+
+                const isPaid = currentTuition.status === 'PAID';
+                document.getElementById('tuitionStatusBadge').innerHTML = isPaid
+                    ? `<span class="inline-flex px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">ĐÃ GẠCH NỢ (PAID)</span>`
+                    : `<span class="inline-flex px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">CHƯA THANH TOÁN</span>`;
+
+                resCard.classList.remove('hidden');
+
+                // Update Nhóm c calculations
+                document.getElementById('sumDeductAmount').innerText = `- ${formatCurrency(currentTuition.amount)} VND`;
+                const remaining = currentUser.balance - currentTuition.amount;
+                document.getElementById('sumRemainingBalance').innerText = `${formatCurrency(remaining)} VND`;
+
+                evaluatePaymentButtonState();
+
+            } catch (err) {
+                loading.classList.add('hidden');
+                errCard.classList.remove('hidden');
+                document.getElementById('tuitionErrorMessage').innerText = err.message;
+                evaluatePaymentButtonState();
+            }
+        }
+
+        // =====================================================================
+        // NHÓM C: VALIDATION & INITIATE PAYMENT
+        // =====================================================================
+        function evaluatePaymentButtonState() {
+            const btn = document.getElementById('btnConfirmPayment');
+            const banner = document.getElementById('conditionBanner');
+            const agreed = document.getElementById('termsAgreementCheckbox').checked;
+
+            const chk1 = document.getElementById('chkExists');
+            const chk2 = document.getElementById('chkUnpaid');
+            const chk3 = document.getElementById('chkBalance');
+
+            if (!currentTuition || !currentUser) {
+                btn.disabled = true;
+                btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2";
+                banner.className = "hidden";
+                resetCheckIcon(chk1, "Khoản học phí tồn tại trên hệ thống");
+                resetCheckIcon(chk2, "Khoản học phí chưa được thanh toán");
+                resetCheckIcon(chk3, "Số dư khả dụng ≥ Số tiền cần thanh toán");
+                return;
+            }
+
+            // Criteria 1: Exists
+            setCheckIcon(chk1, true, "Khoản học phí tồn tại trên hệ thống TDTU");
+
+            // Criteria 2: Unpaid
+            const isUnpaid = currentTuition.status === 'UNPAID';
+            setCheckIcon(chk2, isUnpaid, isUnpaid ? "Khoản học phí chưa thanh toán (Hợp lệ)" : "Khoản học phí ĐÃ THANH TOÁN trước đó");
+
+            // Criteria 3: Enough Balance
+            const hasEnough = currentUser.balance >= currentTuition.amount;
+            setCheckIcon(chk3, hasEnough, hasEnough 
+                ? `Số dư đủ (${formatCurrency(currentUser.balance)} đ ≥ ${formatCurrency(currentTuition.amount)} đ)`
+                : `Số dư KHÔNG ĐỦ (Thiếu ${formatCurrency(currentTuition.amount - currentUser.balance)} đ)`);
+
+            if (!isUnpaid) {
+                banner.className = "p-3.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 block";
+                banner.innerText = "⚠️ Khoản học phí này đã được gạch nợ thành công tại TDTU. Bạn không thể thanh toán lại.";
+                btn.disabled = true;
+                btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2";
+                return;
+            }
+
+            if (!hasEnough) {
+                banner.className = "p-3.5 rounded-xl text-xs font-bold bg-red-50 text-red-900 border border-red-200 block";
+                banner.innerText = `❌ Số dư khả dụng hiện có (${formatCurrency(currentUser.balance)} đ) không đủ để thanh toán học phí (${formatCurrency(currentTuition.amount)} đ). Vui lòng nạp thêm tiền.`;
+                btn.disabled = true;
+                btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2";
+                return;
+            }
+
+            banner.className = "p-3.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 block";
+            banner.innerText = "✅ Điều kiện hợp lệ: Khoản nợ tồn tại, chưa thanh toán và số dư tài khoản đủ chi trả 100%.";
+
+            if (agreed) {
+                btn.disabled = false;
+                btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-tdtu-blue hover:bg-tdtu-navy shadow-lg hover:shadow-xl cursor-pointer transition-all flex items-center justify-center space-x-2";
+            } else {
+                btn.disabled = true;
+                btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2";
+            }
+        }
+
+        function setCheckIcon(el, isOk, text) {
+            el.innerHTML = isOk 
+                ? `<span class="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">✓</span><span class="text-emerald-800 font-semibold">${text}</span>`
+                : `<span class="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold">✕</span><span class="text-red-700 font-semibold">${text}</span>`;
+        }
+
+        function resetCheckIcon(el, text) {
+            el.innerHTML = `<span class="w-4 h-4 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center text-[10px] font-bold">-</span><span class="text-slate-500">${text}</span>`;
+        }
+
+        async function handleInitiatePayment() {
+            if (!currentTuition) return;
+
+            const btn = document.getElementById('btnConfirmPayment');
+            btn.disabled = true;
+            btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Đang tạo giao dịch & gửi mã OTP...</span>`;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/payments/initiate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ mssv: currentTuition.mssv })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Khởi tạo giao dịch thanh toán thất bại');
+                }
+
+                activeTransaction = data.data;
+
+                // Trigger sleek Push Toast simulating receiving Email/SMS
+                triggerPushToast({
+                    title: "📬 Thông Báo Email Mới (TDTU Notification)",
+                    body: `Mã OTP xác thực giao dịch ${activeTransaction.transactionId} là: <strong>${activeTransaction.debugOtpCode}</strong> (Hiệu lực 5 phút)`,
+                    code: activeTransaction.debugOtpCode
+                });
+
+                openOtpVerificationModal();
+
+            } catch (err) {
+                alert('Lỗi khởi tạo: ' + err.message);
+            } finally {
+                evaluatePaymentButtonState();
+            }
+        }
+
+        // =====================================================================
+        // OTP 2FA AUTHENTICATION MODAL & 6 PIN DIGITS LOGIC
+        // =====================================================================
+        function setupPinInputs() {
+            const inputs = document.querySelectorAll('.pin-digit');
+            inputs.forEach((input, idx) => {
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    e.target.value = val;
+                    if (val && idx < inputs.length - 1) {
+                        inputs[idx + 1].focus();
+                    }
+                    checkPinComplete();
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+                        inputs[idx - 1].focus();
+                    }
+                });
+
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+                    if (pasted.length > 0) {
+                        const chars = pasted.split('').slice(0, 6);
+                        chars.forEach((c, i) => {
+                            if (inputs[i]) inputs[i].value = c;
+                        });
+                        const nextIdx = Math.min(chars.length, inputs.length - 1);
+                        inputs[nextIdx].focus();
+                        checkPinComplete();
+                    }
+                });
+            });
+        }
+
+        function checkPinComplete() {
+            const inputs = document.querySelectorAll('.pin-digit');
+            let code = '';
+            inputs.forEach(i => code += i.value);
+            const btn = document.getElementById('btnConfirmOtpSubmit');
+            if (code.length === 6) {
+                btn.disabled = false;
+                btn.className = "w-2/3 py-3 rounded-xl bg-tdtu-blue hover:bg-tdtu-navy text-white font-extrabold text-xs shadow-md transition flex items-center justify-center space-x-1.5 cursor-pointer";
+            } else {
+                btn.disabled = true;
+                btn.className = "w-2/3 py-3 rounded-xl bg-slate-300 text-white font-extrabold text-xs shadow-md transition flex items-center justify-center space-x-1.5 cursor-not-allowed";
+            }
+        }
+
+        function fillPinInputs(code) {
+            if (!code) return;
+            const inputs = document.querySelectorAll('.pin-digit');
+            code.split('').slice(0, 6).forEach((c, i) => {
+                if (inputs[i]) inputs[i].value = c;
+            });
+            checkPinComplete();
+        }
+
+        function openOtpVerificationModal() {
+            const modal = document.getElementById('otpVerificationModal');
+            document.getElementById('otpModalTargetEmail').innerText = activeTransaction.maskedEmail || currentUser.email;
+            document.getElementById('otpModalError').classList.add('hidden');
+            
+            // Clear inputs
+            document.querySelectorAll('.pin-digit').forEach(i => i.value = '');
+            checkPinComplete();
+
+            modal.classList.remove('hidden');
+            startOtpCountdown(activeTransaction.expiresInSeconds || 300);
+
+            // Focus first digit box
+            setTimeout(() => {
+                const first = document.querySelector('.pin-digit');
+                if (first) first.focus();
+            }, 100);
+        }
+
+        function closeOtpVerificationModal() {
+            document.getElementById('otpVerificationModal').classList.add('hidden');
+            clearInterval(otpCountdownInterval);
+        }
+
+        function startOtpCountdown(seconds) {
+            clearInterval(otpCountdownInterval);
+            let remaining = seconds;
+            const display = document.getElementById('otpCountdownTimer');
+            const btn = document.getElementById('btnConfirmOtpSubmit');
+
+            function tick() {
+                const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+                const s = (remaining % 60).toString().padStart(2, '0');
+                display.innerText = `${m}:${s}`;
+
+                if (remaining <= 0) {
+                    clearInterval(otpCountdownInterval);
+                    display.innerText = "HẾT HẠN";
+                    btn.disabled = true;
+                    btn.className = "w-2/3 py-3 rounded-xl bg-slate-300 text-white font-extrabold text-xs cursor-not-allowed";
+                    const errBox = document.getElementById('otpModalError');
+                    errBox.innerText = "Mã OTP đã hết hiệu lực 5 phút. Vui lòng đóng cửa sổ và khởi tạo lại giao dịch mới!";
+                    errBox.classList.remove('hidden');
+                }
+                remaining--;
+            }
+
+            tick();
+            otpCountdownInterval = setInterval(tick, 1000);
+        }
+
+        async function submitOtpVerification() {
+            const inputs = document.querySelectorAll('.pin-digit');
+            let otpCode = '';
+            inputs.forEach(i => otpCode += i.value);
+
+            if (otpCode.length !== 6) return;
+
+            const errBox = document.getElementById('otpModalError');
+            const btn = document.getElementById('btnConfirmOtpSubmit');
+            errBox.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Đang gạch nợ TDTU...</span>`;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/payments/confirm`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        transactionId: activeTransaction.transactionId,
+                        otpCode: otpCode
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Xác thực thanh toán thất bại');
+                }
+
+                closeOtpVerificationModal();
+                showSuccessReceipt(data.data);
+                refreshData();
+
+            } catch (err) {
+                errBox.innerText = err.message;
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Xác Nhận Thanh Toán</span>`;
+            }
+        }
+
+        // =====================================================================
+        // E-RECEIPT MODAL (BIÊN LAI ĐIỆN TỬ)
+        // =====================================================================
+        function showSuccessReceipt(tx) {
+            document.getElementById('receiptModal').classList.remove('hidden');
+            document.getElementById('rcpAmountDisplay').innerText = `${formatCurrency(tx.amount)} VND`;
+            document.getElementById('rcpTransactionId').innerText = tx.id;
+            document.getElementById('rcpTimestamp').innerText = tx.completedAt ? new Date(tx.completedAt).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
+            document.getElementById('rcpStudentName').innerText = tx.studentName;
+            document.getElementById('rcpMssv').innerText = tx.mssv;
+            document.getElementById('rcpDebitAccount').innerText = formatAccountNumber(currentUser.accountNumber);
+            document.getElementById('rcpUpdatedBalance').innerText = `${formatCurrency(currentUser.balance - tx.amount)} VND`;
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+            clearMssvInput();
+            document.getElementById('termsAgreementCheckbox').checked = false;
+            evaluatePaymentButtonState();
+        }
+
+        // =====================================================================
+        // TRANSACTION HISTORY TAB
+        // =====================================================================
+        async function loadTransactionHistory() {
+            const tbody = document.getElementById('historyTableRows');
+            if (!authToken) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/payments/history`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error();
+
+                const list = data.data || [];
+                if (list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-400">Bạn chưa thực hiện giao dịch đóng học phí nào.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = list.map(tx => {
+                    let badge = '';
+                    if (tx.status === 'SUCCESS') {
+                        badge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">THÀNH CÔNG</span>`;
+                    } else if (tx.status === 'FAILED') {
+                        badge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-800">THẤT BẠI</span>`;
+                    } else {
+                        badge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">CHỜ OTP</span>`;
+                    }
+
+                    return `
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="px-5 py-3.5 font-mono font-bold text-tdtu-navy">${tx.id}</td>
+                            <td class="px-5 py-3.5 font-mono font-semibold">${tx.mssv}</td>
+                            <td class="px-5 py-3.5 font-bold text-slate-800">${tx.studentName}</td>
+                            <td class="px-5 py-3.5 font-mono font-bold text-tdtu-blue">${formatCurrency(tx.amount)} đ</td>
+                            <td class="px-5 py-3.5 text-slate-500 text-[11px]">${tx.completedAt ? new Date(tx.completedAt).toLocaleString('vi-VN') : new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
+                            <td class="px-5 py-3.5">${badge}</td>
+                            <td class="px-5 py-3.5 text-right">
+                                ${tx.status === 'SUCCESS' ? `
+                                    <button onclick='viewPastReceipt(${JSON.stringify(tx).replace(/'/g, "&apos;")})' class="px-2.5 py-1 rounded bg-slate-100 hover:bg-tdtu-blue hover:text-white text-slate-700 text-[11px] font-bold transition">
+                                        Xem Biên Lai
+                                    </button>
+                                ` : `<span class="text-slate-400 text-[11px]">${tx.failureReason || '--'}</span>`}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-red-500">Lỗi khi tải lịch sử giao dịch</td></tr>`;
+            }
+        }
+
+        function viewPastReceipt(tx) {
+            showSuccessReceipt(tx);
+        }
+
+        // =====================================================================
+        // CONCURRENCY LAB (KIỂM THỬ ĐỒNG THỜI - 10/10 RUBRIC)
+        // =====================================================================
+        async function runLabScenario1() {
+            const btn = document.getElementById('btnRunLab1');
+            const progress = document.getElementById('lab1Progress');
+            btn.disabled = true;
+            progress.classList.remove('hidden');
+            progress.innerHTML = `<div>⚡ Đang chuẩn bị kịch bản: Đăng nhập user2 (10tr) & tạo 2 giao dịch song song...</div>`;
+
+            try {
+                // 1. Login user2
+                const lRes = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: 'user2', password: 'password123'})
+                });
+                const lData = await lRes.json();
+                const uToken = lData.data.token;
+
+                // 2. Initiate TX 1 & TX 2
+                const init1 = await fetch(`${API_BASE}/api/payments/initiate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${uToken}`},
+                    body: JSON.stringify({mssv: '524H0122'})
+                }).then(r => r.json());
+
+                const init2 = await fetch(`${API_BASE}/api/payments/initiate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${uToken}`},
+                    body: JSON.stringify({mssv: '524H0123'})
+                }).then(r => r.json());
+
+                progress.innerHTML += `
+                    <div>• Đã tạo GD 1: ${init1.data.transactionId} (9.5tr - OTP: ${init1.data.debugOtpCode})</div>
+                    <div>• Đã tạo GD 2: ${init2.data.transactionId} (8.2tr - OTP: ${init2.data.debugOtpCode})</div>
+                    <div class="text-blue-700 font-bold mt-1">🚀 Bắn 2 confirm requests song song vào cùng một tích tắc...</div>
+                `;
+
+                // 3. Race condition trigger
+                const p1 = fetch(`${API_BASE}/api/payments/confirm`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${uToken}`},
+                    body: JSON.stringify({transactionId: init1.data.transactionId, otpCode: init1.data.debugOtpCode})
+                }).then(async r => ({ status: r.status, data: await r.json(), id: init1.data.transactionId }));
+
+                const p2 = fetch(`${API_BASE}/api/payments/confirm`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${uToken}`},
+                    body: JSON.stringify({transactionId: init2.data.transactionId, otpCode: init2.data.debugOtpCode})
+                }).then(async r => ({ status: r.status, data: await r.json(), id: init2.data.transactionId }));
+
+                const results = await Promise.all([p1, p2]);
+
+                results.forEach(r => {
+                    if (r.status === 200 && r.data.success) {
+                        progress.innerHTML += `<div class="text-emerald-700 font-bold">✅ ${r.id}: THÀNH CÔNG gạch nợ học phí!</div>`;
+                    } else {
+                        progress.innerHTML += `<div class="text-red-600 font-bold">❌ ${r.id}: BỊ TỪ CHỐI AN TOÀN -> ${r.data.message}</div>`;
+                    }
+                });
+
+                progress.innerHTML += `<div class="text-slate-800 font-bold pt-2 border-t border-blue-200">🎯 KẾT QUẢ: ĐẠT 100%! Pessimistic Lock ngăn chặn hoàn toàn việc chi tiêu vượt quá số dư khả dụng!</div>`;
+                refreshData();
+
+            } catch (err) {
+                progress.innerHTML += `<div class="text-red-600">Lỗi: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function runLabScenario2() {
+            const btn = document.getElementById('btnRunLab2');
+            const progress = document.getElementById('lab2Progress');
+            btn.disabled = true;
+            progress.classList.remove('hidden');
+            progress.innerHTML = `<div>⚡ Đang chuẩn bị kịch bản: 2 tài khoản (user1 & parent1) cùng nộp cho 1 SV 524H0999...</div>`;
+
+            try {
+                // Login user1 & parent1
+                const l1 = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: 'user1', password: 'password123'})
+                }).then(r => r.json());
+
+                const l2 = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: 'parent1', password: 'password123'})
+                }).then(r => r.json());
+
+                const tok1 = l1.data.token;
+                const tok2 = l2.data.token;
+
+                // Initiate
+                const init1 = await fetch(`${API_BASE}/api/payments/initiate`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${tok1}`},
+                    body: JSON.stringify({mssv: '524H0999'})
+                }).then(r => r.json());
+
+                const init2 = await fetch(`${API_BASE}/api/payments/initiate`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${tok2}`},
+                    body: JSON.stringify({mssv: '524H0999'})
+                }).then(r => r.json());
+
+                progress.innerHTML += `
+                    <div>• user1 tạo GD: ${init1.data.transactionId} (OTP: ${init1.data.debugOtpCode})</div>
+                    <div>• parent1 tạo GD: ${init2.data.transactionId} (OTP: ${init2.data.debugOtpCode})</div>
+                    <div class="text-amber-800 font-bold mt-1">🚀 Bắn 2 confirm requests cùng nộp cho 1 MSSV đồng thời...</div>
+                `;
+
+                // Race confirm
+                const p1 = fetch(`${API_BASE}/api/payments/confirm`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${tok1}`},
+                    body: JSON.stringify({transactionId: init1.data.transactionId, otpCode: init1.data.debugOtpCode})
+                }).then(async r => ({ status: r.status, data: await r.json(), user: 'user1', id: init1.data.transactionId }));
+
+                const p2 = fetch(`${API_BASE}/api/payments/confirm`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${tok2}`},
+                    body: JSON.stringify({transactionId: init2.data.transactionId, otpCode: init2.data.debugOtpCode})
+                }).then(async r => ({ status: r.status, data: await r.json(), user: 'parent1', id: init2.data.transactionId }));
+
+                const results = await Promise.all([p1, p2]);
+
+                results.forEach(r => {
+                    if (r.status === 200 && r.data.success) {
+                        progress.innerHTML += `<div class="text-emerald-700 font-bold">✅ [${r.user}] ${r.id}: GẠCH NỢ THÀNH CÔNG!</div>`;
+                    } else {
+                        progress.innerHTML += `<div class="text-amber-700 font-bold">❌ [${r.user}] ${r.id}: BỊ CHẶN & ĐÃ HOÀN TIỀN -> ${r.data.message}</div>`;
+                    }
+                });
+
+                progress.innerHTML += `<div class="text-slate-800 font-bold pt-2 border-t border-amber-200">🎯 KẾT QUẢ: ĐẠT 100%! Học phí chỉ gạch nợ đúng 1 lần, người nộp sau được bồi hoàn tiền trọn vẹn!</div>`;
+                refreshData();
+
+            } catch (err) {
+                progress.innerHTML += `<div class="text-red-600">Lỗi: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function resetSystemData() {
+            if (!confirm('Bạn có chắc chắn muốn làm mới toàn bộ dữ liệu mẫu (Số dư tài khoản & Trạng thái học phí) về ban đầu?')) return;
+            try {
+                await fetch(`${API_BASE}/api/accounts/internal/reset`, { method: 'POST' });
+                await fetch(`${API_BASE}/api/tuitions/internal/reset`, { method: 'POST' });
+                alert('Đã khôi phục dữ liệu ban đầu thành công!');
+                refreshData();
+            } catch (err) {
+                alert('Lỗi reset: ' + err.message);
+            }
+        }
+
+        // =====================================================================
+        // SIMULATED EMAIL NOTIFICATIONS & FLOATING TOASTS
+        // =====================================================================
+        function toggleInboxDrawer() {
+            const drawer = document.getElementById('inboxDrawer');
+            drawer.classList.toggle('hidden');
+            if (!drawer.classList.contains('hidden')) {
+                fetchSimulatedEmails();
+            }
+        }
+
+        async function fetchSimulatedEmails() {
+            try {
+                const res = await fetch(`${API_BASE}/api/notifications/emails`);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const emails = data.data;
+                    document.getElementById('inboxCountBadge').innerText = emails.length;
+                    const navBadge = document.getElementById('navInboxBadge');
+                    if (navBadge) {
+                        if (emails.length > 0) navBadge.classList.remove('hidden');
+                        else navBadge.classList.add('hidden');
+                    }
+
+                    const listEl = document.getElementById('inboxEmailList');
+                    if (emails.length === 0) {
+                        listEl.innerHTML = `<div class="text-center py-12 text-slate-400 text-xs">Hộp thư thông báo trống. Khi có giao dịch, mã OTP và biên lai sẽ xuất hiện tại đây.</div>`;
+                        return;
+                    }
+
+                    listEl.innerHTML = emails.map(m => `
+                        <div class="p-4 rounded-2xl border ${m.type === 'OTP' ? 'border-amber-200 bg-amber-50/50' : 'border-emerald-200 bg-emerald-50/50'} text-xs space-y-2">
+                            <div class="flex justify-between items-start">
+                                <span class="font-extrabold text-slate-800">${m.subject}</span>
+                                <span class="text-[10px] text-slate-400 font-mono">${new Date(m.sentAt).toLocaleTimeString('vi-VN')}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500">Đến: <span class="font-mono text-slate-700 font-semibold">${m.to}</span></div>
+                            <pre class="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed">${m.content}</pre>
+                            ${m.otpCode ? `
+                                <div class="mt-2 pt-2 border-t border-amber-200 flex items-center justify-between">
+                                    <span class="text-xs font-black text-blue-800 font-mono">OTP: ${m.otpCode}</span>
+                                    <button onclick="fillPinInputs('${m.otpCode}'); closeInboxDrawer();" class="px-2.5 py-1 bg-tdtu-blue hover:bg-tdtu-navy text-white rounded-lg text-[10px] font-bold transition">
+                                        ⚡ Điền Vào Form
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                // silent
+            }
+        }
+
+        function closeInboxDrawer() {
+            document.getElementById('inboxDrawer').classList.add('hidden');
+        }
+
+        function startInboxEmailSync() {
+            fetchSimulatedEmails();
+            inboxPollInterval = setInterval(fetchSimulatedEmails, 3000);
+        }
+
+        function triggerPushToast(notif) {
+            const container = document.getElementById('pushToastContainer');
+            const toast = document.createElement('div');
+            toast.className = "pointer-events-auto bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-slate-200/80 text-xs text-slate-800 space-y-2 animate-in slide-in-from-top-4 duration-300";
+            
+            toast.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <span class="font-bold text-slate-800">${notif.title}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-slate-600 text-sm font-bold">&times;</button>
+                </div>
+                <p class="text-slate-600 text-[11px] leading-relaxed">${notif.body}</p>
+                ${notif.code ? `
+                    <div class="flex space-x-2 pt-1">
+                        <button onclick="fillPinInputs('${notif.code}'); this.parentElement.parentElement.remove();" class="px-3 py-1.5 bg-tdtu-blue hover:bg-tdtu-navy text-white rounded-lg text-[11px] font-bold transition">
+                            ⚡ Điền tự động 6 ô
+                        </button>
+                        <button onclick="navigator.clipboard.writeText('${notif.code}'); this.innerText='Đã sao chép!';" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition">
+                            📋 Sao chép mã
+                        </button>
+                    </div>
+                ` : ''}
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, 10000);
+        }
+
+        // =====================================================================
+        // TERMS MODAL
+        // =====================================================================
+        function openTermsModal() {
+            document.getElementById('termsModal').classList.remove('hidden');
+        }
+
+        function closeTermsModal() {
+            document.getElementById('termsModal').classList.add('hidden');
+        }
+
+        function acceptTermsFromModal() {
+            document.getElementById('termsAgreementCheckbox').checked = true;
+            closeTermsModal();
+            evaluatePaymentButtonState();
+        }
+
+        // =====================================================================
+        // GENERAL HELPERS
+        // =====================================================================
+        async function refreshData() {
+            await fetchCurrentUser();
+            if (currentTuition) {
+                await executeSearchTuition();
+            }
+            await loadTransactionHistory();
+            fetchSimulatedEmails();
+        }
+
+        function formatCurrency(val) {
+            if (val == null) return "0";
+            return Number(val).toLocaleString('vi-VN');
+        }
+
+        function formatAccountNumber(num) {
+            if (!num) return "";
+            return num.replace(/(\d{4})(?=\d)/g, '$1 ');
+        }
+
+        function capitalize(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: otp-service
+  datasource:
+    url: jdbc:h2:mem:otp_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+notification:
+  otp-expiration-seconds: 300 # 5 minutes
+  smtp:
+    enabled: false # Set to true if local Mailpit/MailHog or real SMTP is running
+    host: localhost
+    port: 1025
+

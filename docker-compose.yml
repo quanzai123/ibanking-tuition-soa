@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # 1. Account & Auth Service (Port 8081)
+  account-service:
+    build:
+      context: ./account-service
+      dockerfile: Dockerfile
+    container_name: ibanking-account-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8081
+    networks:
+      - ibanking-net
+
+  # 2. Tuition Service (Port 8083)
+  tuition-service:
+    build:
+      context: ./tuition-service
+      dockerfile: Dockerfile
+    container_name: ibanking-tuition-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8083
+    networks:
+      - ibanking-net
+
+  # 3. OTP & Notification Service (Port 8084)
+  otp-service:
+    build:
+      context: ./otp-service
+      dockerfile: Dockerfile
+    container_name: ibanking-otp-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8084
+      - NOTIFICATION_SMTP_HOST=mailhog
+      - NOTIFICATION_SMTP_PORT=1025
+    depends_on:
+      - mailhog
+    networks:
+      - ibanking-net
+
+  # 4. Payment Orchestrator Service (Port 8082)
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: ibanking-payment-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8082
+      - SERVICES_ACCOUNT_URL=http://account-service:8081
+      - SERVICES_TUITION_URL=http://tuition-service:8083
+      - SERVICES_OTP_URL=http://otp-service:8084
+    depends_on:
+      - account-service
+      - tuition-service
+      - otp-service
+    networks:
+      - ibanking-net
+
+  # 5. API Gateway & Web Frontend (Port 8080)
+  gateway-service:
+    build:
+      context: ./gateway-service
+      dockerfile: Dockerfile
+    container_name: ibanking-gateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8080
+      - SERVICES_ACCOUNT_URL=http://account-service:8081
+      - SERVICES_PAYMENT_URL=http://payment-service:8082
+      - SERVICES_TUITION_URL=http://tuition-service:8083
+      - SERVICES_OTP_URL=http://otp-service:8084
+    depends_on:
+      - payment-service
+    networks:
+      - ibanking-net
+
+  # 6. MailHog - Local 100% Free Open-Source Mail Viewer (Port 8025 Web UI, 1025 SMTP)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: ibanking-mailhog
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port to see all OTP & Receipt emails
+    networks:
+      - ibanking-net
+
+networks:
+  ibanking-net:
+    driver: bridge
+

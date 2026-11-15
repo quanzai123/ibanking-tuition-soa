@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+
+services:
+  account:
+    url: ${ACCOUNT_SERVICE_URL:http://localhost:8081}
+  payment:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8082}
+  tuition:
+    url: ${TUITION_SERVICE_URL:http://localhost:8083}
+  otp:
+    url: ${OTP_SERVICE_URL:http://localhost:8084}
+

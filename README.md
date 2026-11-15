@@ -327,34 +327,71 @@ Hệ thống tài chính phải đối mặt và giải quyết triệt để 2 
 
 ---
 
-## 9. Hướng Dẫn Khởi Động Nhanh (Native & Docker)
+## 9. Hướng Dẫn Tải Về & Khởi Động (Dành Cho Mọi Thiết Bị)
 
-### 🔹 Cách 1: Khởi động Native Script (Khuyên dùng để Demo chấm điểm)
-Yêu cầu: Máy đã cài Java 21 và Maven.
+### 📋 Bước 0: Yêu Cầu Tiên Quyết (Prerequisites)
+Bạn chỉ cần **một trong hai** cách thức cài đặt dưới đây:
+* **Cách Khuyên Dùng (Cực nhanh):** Máy tính đã cài đặt **Java 21** (JDK 21) — Không bắt buộc cài sẵn Maven vì dự án đã tích hợp sẵn Maven Wrapper (`mvnw`).
+* **Cách Qua Docker:** Máy tính đã cài đặt **Docker Desktop** (Đang mở ứng dụng Docker).
+
+---
+
+### 📥 Bước 1: Tải mã nguồn về máy (Git Clone)
+Mở Terminal (macOS/Linux) hoặc Command Prompt / PowerShell (Windows) và chạy:
 ```bash
-# 1. Cấp quyền thực thi và khởi chạy toàn bộ 5 microservices
-./run-all.sh
-```
-*Script sẽ tự động dọn dẹp port, build code nếu cần và kích hoạt 5 microservices. Sau 5 giây toàn bộ hệ thống sẵn sàng!*
-
-🌐 **Mở Trình duyệt Web và truy cập ngay tại:**  
-👉 **[http://localhost:8080](http://localhost:8080)**
-
-🛑 Để dừng toàn bộ hệ thống: Nhấn `Ctrl + C` hoặc chạy:
-```bash
-./stop-all.sh
+git clone https://github.com/quanzai123/ibanking-tuition-soa.git
+cd ibanking-tuition-soa
 ```
 
 ---
 
-### 🔹 Cách 2: Khởi động bằng Docker Compose (Khép kín 100%)
-Yêu cầu: Máy đã cài đặt Docker Desktop.
+### 🚀 Bước 2: Khởi động hệ thống (Chọn 1 trong các cách sau)
+
+#### 🔹 Lựa chọn A: Dành cho macOS hoặc Linux (1-Click Run)
 ```bash
-docker compose up --build -d
+# Cấp quyền thực thi và khởi động 5 microservices
+chmod +x run-all.sh stop-all.sh docker-run.sh mvnw
+./run-all.sh
 ```
-* Danh sách dịch vụ Docker:
-  - **Web iBanking UI & Gateway:** [http://localhost:8080](http://localhost:8080)
-  - **Hộp thư Webmail MailHog:** [http://localhost:8025](http://localhost:8025)
+*Script sẽ tự động dọn dẹp port 8080-8084, biên dịch nếu chưa có JAR và bật 5 microservices ngầm. Sau khoảng 5-7 giây, toàn bộ hệ thống sẵn sàng!*
+* 🛑 **Để dừng toàn bộ hệ thống:** Nhấn `Ctrl + C` hoặc mở terminal chạy `./stop-all.sh`.
+
+#### 🔹 Lựa chọn B: Dành cho Windows (1-Click Run)
+Nhấp đúp chuột trực tiếp vào file **`run-all.bat`** (hoặc mở Command Prompt gõ):
+```cmd
+run-all.bat
+```
+* 🛑 **Để dừng toàn bộ hệ thống trên Windows:** Nhấp đúp chuột vào file **`stop-all.bat`**.
+
+#### 🔹 Lựa chọn C: Khởi chạy bằng Docker Compose (Khép kín 100%)
+* Trên **macOS / Linux**:
+  ```bash
+  ./docker-run.sh
+  ```
+* Trên **Windows**:
+  ```cmd
+  docker-run.bat
+  ```
+*(Hoặc gõ thủ công: `./mvnw clean package -DskipTests && docker compose up --build -d`)*
+* 🛑 **Để dừng Docker:** Chạy `docker compose down`.
+
+---
+
+### 🌐 Bước 3: Truy Cập & Trải Nghiệm Ứng Dụng
+1. Mở bất kỳ trình duyệt web nào (Chrome, Safari, Edge, Firefox) và truy cập:  
+   👉 **[http://localhost:8080](http://localhost:8080)**
+2. **Đăng nhập nhanh:** Bấm vào 1 trong 3 thẻ tài khoản mẫu có sẵn trên màn hình:
+   - `user1` (Nguyễn Văn An — Số dư 35.000.000 đ)
+   - `user2` (Trần Thị Bích — Số dư 10.000.000 đ)
+   - `parent1` (Lê Hoàng Nam — Số dư 50.000.000 đ)
+3. **Thanh toán học phí:**
+   - Nhập MSSV: `524H0122` (hoặc bấm nút chip gợi ý nhanh). Hệ thống tự động tra cứu ra sinh viên Nguyễn Anh Quân (9.500.000 đ).
+   - Tích chọn "Đồng ý với các điều khoản".
+   - Bấm **"Xác Nhận & Nhận Mã OTP"**.
+   - Thông báo Email OTP sẽ trượt ra góc trên màn hình. Bấm **`[⚡ Điền tự động 6 ô]`** và nhấn **"Xác Nhận Thanh Toán"**.
+   - Biên lai điện tử **E-Receipt** lập tức hiển thị, số dư tự động cập nhật và khoản nợ chuyển sang `PAID`!
+4. **Kiểm tra Lịch sử:** Nhấn tab **"📜 Lịch Sử Giao Dịch"** để xem lại các giao dịch đã thực hiện và in lại biên lai.
+5. **Chạy Thử Nghiệm Tranh Chấp (Concurrency Lab):** Nhấn tab **"⚡ Concurrency Lab"** để trực tiếp bấm chạy 2 kịch bản tranh chấp đồng thời ngay trên giao diện web mà không cần dòng lệnh nào!
 
 ---
 

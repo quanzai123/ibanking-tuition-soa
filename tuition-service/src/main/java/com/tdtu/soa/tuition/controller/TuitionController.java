@@ -36,6 +36,12 @@ public class TuitionController {
         return ResponseEntity.ok(ApiResponse.ok("Gạch nợ học phí thành công", result));
     }
 
+    @PostMapping("/{mssv}/reset")
+    public ResponseEntity<ApiResponse<TuitionDto>> resetSingleTuition(@PathVariable String mssv) {
+        TuitionDto result = tuitionService.resetSingleTuition(mssv);
+        return ResponseEntity.ok(ApiResponse.ok("Đã đặt lại trạng thái học phí sinh viên về CHƯA ĐÓNG", result));
+    }
+
     @PostMapping("/internal/reset")
     public ResponseEntity<ApiResponse<String>> resetData() {
         tuitionService.resetSeedData();

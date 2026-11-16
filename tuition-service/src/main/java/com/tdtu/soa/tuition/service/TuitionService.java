@@ -86,6 +86,19 @@ public class TuitionService implements CommandLineRunner {
     }
 
     @Transactional
+    public TuitionDto resetSingleTuition(String mssv) {
+        log.info("[TEST-ASSIST] Đặt lại trạng thái học phí cho MSSV: {}", mssv);
+        Tuition tuition = tuitionRepository.findByMssv(mssv)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin học phí cho MSSV: " + mssv));
+        tuition.setStatus("UNPAID");
+        tuition.setPaidAt(null);
+        tuition.setTransactionRef(null);
+        tuitionRepository.save(tuition);
+        log.info("[TEST-ASSIST] Đặt lại thành công MSSV {} về trạng thái UNPAID", mssv);
+        return getTuitionByMssv(mssv);
+    }
+
+    @Transactional
     public void resetSeedData() {
         log.info("[MAINTENANCE] Đặt lại dữ liệu mẫu cho Tuition Service...");
         tuitionRepository.deleteAll();

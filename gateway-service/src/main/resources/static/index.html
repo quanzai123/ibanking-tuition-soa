@@ -1269,39 +1269,61 @@
 
                 const isPaid = currentTuition.status === 'PAID';
                 document.getElementById('tuitionStatusBadge').innerHTML = isPaid
-                    ? `<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border-2 border-emerald-400 shadow-sm animate-pulse"><span>✅</span><span>ĐÃ THANH TOÁN THÀNH CÔNG</span></span>`
+                    ? `<div class="flex items-center space-x-1.5 flex-wrap gap-1">
+                           <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border-2 border-emerald-400 shadow-sm animate-pulse">
+                               <span>✅</span><span>ĐÃ THANH TOÁN</span>
+                           </span>
+                           <button type="button" onclick="resetStudentTuitionForTesting('${currentTuition.mssv}')" 
+                                   title="Đặt lại sinh viên này về trạng thái Chưa đóng để bạn test lại thanh toán"
+                                   class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-full text-[11px] font-bold transition flex items-center space-x-1 shadow-sm cursor-pointer hover:scale-105 active:scale-95">
+                               <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                               <span>🔄 Reset để Test Lại</span>
+                           </button>
+                       </div>`
                     : `<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300"><span>⏳</span><span>CHƯA THANH TOÁN</span></span>`;
 
                 const amtCard = document.getElementById('tuitionAmountCard');
-                const amtLabel = document.getElementById('tuitionAmountCardLabel');
-                const amtSub = document.getElementById('tuitionAmountCardSub');
-                const amtVal = document.getElementById('resTuitionAmount');
-                const amtUnit = document.getElementById('resTuitionUnit');
 
                 if (isPaid) {
-                    amtCard.className = "p-4 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white rounded-xl flex items-center justify-between shadow-md border-2 border-emerald-400/60 transition-all duration-300";
-                    amtLabel.innerText = "🎉 TRẠNG THÁI NGHĨA VỤ HỌC PHÍ HỌC KỲ 1/2026-2027";
-                    amtLabel.className = "text-[11px] uppercase font-black text-emerald-200 tracking-wider block";
-                    amtSub.innerText = `Đã gạch nợ đủ ${formatCurrency(currentTuition.amount)} VND • Mã chuẩn chi: ${currentTuition.transactionRef || 'GẠCH NỢ TDTU'}`;
-                    amtSub.className = "text-[11px] text-emerald-100 font-medium";
-                    amtVal.innerText = "0";
-                    amtVal.className = "text-2xl font-black text-emerald-300";
-                    amtUnit.innerText = "VND (Dư Nợ Còn Lại: 0đ)";
-                    amtUnit.className = "text-xs font-bold text-emerald-200";
+                    amtCard.className = "p-4 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white rounded-xl shadow-md border-2 border-emerald-400/60 transition-all duration-300 space-y-2.5";
+                    amtCard.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-[11px] uppercase font-black text-emerald-200 tracking-wider block">🎉 TRẠNG THÁI NGHĨA VỤ HỌC PHÍ HỌC KỲ 1/2026-2027</span>
+                                <span class="text-[11px] text-emerald-100 font-medium">Đã gạch nợ đủ ${formatCurrency(currentTuition.amount)} VND • Mã chuẩn chi: ${currentTuition.transactionRef || 'GẠCH NỢ TDTU'}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="flex items-baseline space-x-1">
+                                    <span class="text-2xl font-black text-emerald-300">0</span>
+                                    <span class="text-xs font-bold text-emerald-200">VND (Dư Nợ: 0đ)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-emerald-600/50 flex items-center justify-between text-xs">
+                            <span class="text-emerald-200 text-[11px]">Cần kiểm thử lại quy trình nộp học phí cho sinh viên này?</span>
+                            <button type="button" onclick="resetStudentTuitionForTesting('${currentTuition.mssv}')" class="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold text-[11px] flex items-center space-x-1 transition cursor-pointer">
+                                <span>🔄 Đặt lại về Chưa Đóng (Test lại)</span>
+                            </button>
+                        </div>
+                    `;
 
                     // Nhóm c: Số tiền trích nợ = 0 VND (Đã hoàn tất)
                     document.getElementById('sumDeductAmount').innerHTML = `<span class="text-emerald-700 font-bold">0 VND (Đã hoàn tất)</span>`;
                     document.getElementById('sumRemainingBalance').innerText = `${formatCurrency(currentUser.balance)} VND`;
                 } else {
                     amtCard.className = "p-3.5 bg-blue-900 text-white rounded-xl flex items-center justify-between shadow-inner transition-all duration-300";
-                    amtLabel.innerText = "Số tiền học phí cần thanh toán (100%)";
-                    amtLabel.className = "text-[10px] uppercase font-bold text-blue-200 tracking-wider block";
-                    amtSub.innerText = "Không hỗ trợ thanh toán một phần theo quy định TDTU";
-                    amtSub.className = "text-[11px] text-blue-200/80";
-                    amtVal.innerText = formatCurrency(currentTuition.amount);
-                    amtVal.className = "text-xl sm:text-2xl font-black text-amber-300";
-                    amtUnit.innerText = "VND";
-                    amtUnit.className = "text-xs font-bold text-amber-200";
+                    amtCard.innerHTML = `
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-blue-200 tracking-wider block">Số tiền học phí cần thanh toán (100%)</span>
+                            <span class="text-[11px] text-blue-200/80">Không hỗ trợ thanh toán một phần theo quy định TDTU</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="flex items-baseline space-x-1">
+                                <span class="text-xl sm:text-2xl font-black text-amber-300">${formatCurrency(currentTuition.amount)}</span>
+                                <span class="text-xs font-bold text-amber-200">VND</span>
+                            </div>
+                        </div>
+                    `;
 
                     // Nhóm c: Trừ tiền bình thường
                     document.getElementById('sumDeductAmount').innerHTML = `- ${formatCurrency(currentTuition.amount)} VND`;
@@ -2014,13 +2036,18 @@
                     const isPaid = data && data.status === 'PAID';
                     if (isPaid) {
                         html += `
-                            <button type="button" onclick="selectQuickMssv('${c.mssv}')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 transition flex items-center space-x-1 shadow-sm">
-                                <span>✅</span><span>${c.mssv} (Đã đóng)</span>
-                            </button>
+                            <div class="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-bold shadow-sm overflow-hidden hover:border-emerald-400 transition">
+                                <button type="button" onclick="selectQuickMssv('${c.mssv}')" class="px-2.5 py-0.5 hover:bg-emerald-100 transition flex items-center space-x-1 cursor-pointer">
+                                    <span>✅</span><span>${c.mssv} (Đã đóng)</span>
+                                </button>
+                                <button type="button" onclick="resetStudentTuitionForTesting('${c.mssv}')" title="Bấm vào đây để đặt lại ${c.mssv} về Chưa Đóng để test lại nhiều lần" class="px-2 py-0.5 bg-emerald-200/60 hover:bg-amber-200 hover:text-amber-900 border-l border-emerald-300 transition flex items-center cursor-pointer" style="line-height: 1;">
+                                    <span class="text-[11px]">🔄</span>
+                                </button>
+                            </div>
                         `;
                     } else {
                         html += `
-                            <button type="button" onclick="selectQuickMssv('${c.mssv}')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
+                            <button type="button" onclick="selectQuickMssv('${c.mssv}')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition cursor-pointer">
                                 ${c.mssv} (${c.defaultLabel})
                             </button>
                         `;
@@ -2029,6 +2056,34 @@
                 listEl.innerHTML = html;
             } catch (err) {
                 console.error('Error updating quick chips:', err);
+            }
+        }
+
+        async function resetStudentTuitionForTesting(mssv) {
+            if (!mssv) return;
+            try {
+                // 1. Reset this student's tuition to UNPAID in tuition_db
+                const res = await fetch(`${API_BASE}/api/tuitions/${mssv}/reset`, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Không thể đặt lại học phí');
+                }
+
+                // 2. Ensure currentUser balance is restored back to initial seed so user has funds to test
+                await fetch(`${API_BASE}/api/accounts/internal/reset`, { method: 'POST' });
+
+                // 3. Refresh user, chips, and student card
+                await refreshData();
+                document.getElementById('mssvSearchField').value = mssv;
+                document.getElementById('clearMssvBtn').classList.remove('hidden');
+                await executeSearchTuition();
+
+                triggerPushToast({
+                    title: "🔄 Đã Đặt Lại Học Phí Thành Công",
+                    body: `Sinh viên <strong>${mssv}</strong> đã được chuyển về trạng thái <strong>CHƯA THANH TOÁN</strong> và số dư tài khoản đã được phục hồi đầy đủ. Bạn có thể test thanh toán lại ngay!`
+                });
+            } catch (err) {
+                alert('Lỗi khi đặt lại học phí: ' + err.message);
             }
         }
 

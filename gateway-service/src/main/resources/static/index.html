@@ -374,20 +374,22 @@
                                 </div>
 
                                 <!-- QUICK CHIPS -->
-                                <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
+                                <div class="mt-2.5 flex flex-wrap items-center gap-1.5" id="quickChipsContainer">
                                     <span class="text-[11px] text-slate-400 font-medium">Gợi ý tra cứu nhanh:</span>
-                                    <button type="button" onclick="selectQuickMssv('524H0122')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
-                                        524H0122 (9.5tr)
-                                    </button>
-                                    <button type="button" onclick="selectQuickMssv('524H0123')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
-                                        524H0123 (8.2tr)
-                                    </button>
-                                    <button type="button" onclick="selectQuickMssv('524H0999')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
-                                        524H0999 (12tr)
-                                    </button>
-                                    <button type="button" onclick="selectQuickMssv('524H0888')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-amber-100 text-amber-700 font-semibold border border-slate-200 transition">
-                                        524H0888 (Đã đóng)
-                                    </button>
+                                    <div id="quickChipsList" class="inline-flex flex-wrap items-center gap-1.5">
+                                        <button type="button" onclick="selectQuickMssv('524H0122')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
+                                            524H0122 (9.5tr)
+                                        </button>
+                                        <button type="button" onclick="selectQuickMssv('524H0123')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
+                                            524H0123 (8.2tr)
+                                        </button>
+                                        <button type="button" onclick="selectQuickMssv('524H0999')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
+                                            524H0999 (12tr)
+                                        </button>
+                                        <button type="button" onclick="selectQuickMssv('524H0888')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300 transition">
+                                            524H0888 (Đã đóng)
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -429,15 +431,15 @@
                                     </div>
                                 </div>
 
-                                <div class="p-3.5 bg-blue-900 text-white rounded-xl flex items-center justify-between shadow-inner">
+                                <div id="tuitionAmountCard" class="p-3.5 bg-blue-900 text-white rounded-xl flex items-center justify-between shadow-inner transition-all duration-300">
                                     <div>
-                                        <span class="text-[10px] uppercase font-bold text-blue-200 tracking-wider block">Số tiền học phí cần thanh toán (100%)</span>
-                                        <span class="text-[11px] text-blue-200/80">Không hỗ trợ thanh toán một phần theo quy định TDTU</span>
+                                        <span id="tuitionAmountCardLabel" class="text-[10px] uppercase font-bold text-blue-200 tracking-wider block">Số tiền học phí cần thanh toán (100%)</span>
+                                        <span id="tuitionAmountCardSub" class="text-[11px] text-blue-200/80">Không hỗ trợ thanh toán một phần theo quy định TDTU</span>
                                     </div>
                                     <div class="text-right">
                                         <div class="flex items-baseline space-x-1">
                                             <span id="resTuitionAmount" class="text-xl sm:text-2xl font-black text-amber-300">0</span>
-                                            <span class="text-xs font-bold text-amber-200">VND</span>
+                                            <span id="resTuitionUnit" class="text-xs font-bold text-amber-200">VND</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1074,6 +1076,7 @@
             renderUserAccountCard();
             switchTab(currentActiveTab);
             loadTransactionHistory();
+            updateQuickChips();
         }
 
         function renderNavRightControls() {
@@ -1202,6 +1205,8 @@
             document.getElementById('tuitionCardResult').classList.add('hidden');
             document.getElementById('tuitionErrorCard').classList.add('hidden');
             document.getElementById('tuitionLoadingState').classList.add('hidden');
+            document.getElementById('termsAgreementCheckbox').checked = false;
+            document.getElementById('termsAgreementCheckbox').disabled = false;
             document.getElementById('sumDeductAmount').innerText = '- 0 VND';
             document.getElementById('sumRemainingBalance').innerText = `${formatCurrency(currentUser ? currentUser.balance : 0)} VND`;
             evaluatePaymentButtonState();
@@ -1242,20 +1247,50 @@
                 document.getElementById('resStudentFullName').innerText = currentTuition.studentName;
                 document.getElementById('resStudentSemester').innerText = currentTuition.semester;
                 document.getElementById('tuitionFacultyBadge').innerText = `${currentTuition.faculty} - ${currentTuition.major || ''}`;
-                document.getElementById('resTuitionAmount').innerText = formatCurrency(currentTuition.amount);
 
                 const isPaid = currentTuition.status === 'PAID';
                 document.getElementById('tuitionStatusBadge').innerHTML = isPaid
-                    ? `<span class="inline-flex px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">ĐÃ GẠCH NỢ (PAID)</span>`
-                    : `<span class="inline-flex px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">CHƯA THANH TOÁN</span>`;
+                    ? `<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border-2 border-emerald-400 shadow-sm animate-pulse"><span>✅</span><span>ĐÃ THANH TOÁN THÀNH CÔNG</span></span>`
+                    : `<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300"><span>⏳</span><span>CHƯA THANH TOÁN</span></span>`;
+
+                const amtCard = document.getElementById('tuitionAmountCard');
+                const amtLabel = document.getElementById('tuitionAmountCardLabel');
+                const amtSub = document.getElementById('tuitionAmountCardSub');
+                const amtVal = document.getElementById('resTuitionAmount');
+                const amtUnit = document.getElementById('resTuitionUnit');
+
+                if (isPaid) {
+                    amtCard.className = "p-4 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white rounded-xl flex items-center justify-between shadow-md border-2 border-emerald-400/60 transition-all duration-300";
+                    amtLabel.innerText = "🎉 TRẠNG THÁI NGHĨA VỤ HỌC PHÍ HỌC KỲ 1/2026-2027";
+                    amtLabel.className = "text-[11px] uppercase font-black text-emerald-200 tracking-wider block";
+                    amtSub.innerText = `Đã gạch nợ đủ ${formatCurrency(currentTuition.amount)} VND • Mã chuẩn chi: ${currentTuition.transactionRef || 'GẠCH NỢ TDTU'}`;
+                    amtSub.className = "text-[11px] text-emerald-100 font-medium";
+                    amtVal.innerText = "0";
+                    amtVal.className = "text-2xl font-black text-emerald-300";
+                    amtUnit.innerText = "VND (Dư Nợ Còn Lại: 0đ)";
+                    amtUnit.className = "text-xs font-bold text-emerald-200";
+
+                    // Nhóm c: Số tiền trích nợ = 0 VND (Đã hoàn tất)
+                    document.getElementById('sumDeductAmount').innerHTML = `<span class="text-emerald-700 font-bold">0 VND (Đã hoàn tất)</span>`;
+                    document.getElementById('sumRemainingBalance').innerText = `${formatCurrency(currentUser.balance)} VND`;
+                } else {
+                    amtCard.className = "p-3.5 bg-blue-900 text-white rounded-xl flex items-center justify-between shadow-inner transition-all duration-300";
+                    amtLabel.innerText = "Số tiền học phí cần thanh toán (100%)";
+                    amtLabel.className = "text-[10px] uppercase font-bold text-blue-200 tracking-wider block";
+                    amtSub.innerText = "Không hỗ trợ thanh toán một phần theo quy định TDTU";
+                    amtSub.className = "text-[11px] text-blue-200/80";
+                    amtVal.innerText = formatCurrency(currentTuition.amount);
+                    amtVal.className = "text-xl sm:text-2xl font-black text-amber-300";
+                    amtUnit.innerText = "VND";
+                    amtUnit.className = "text-xs font-bold text-amber-200";
+
+                    // Nhóm c: Trừ tiền bình thường
+                    document.getElementById('sumDeductAmount').innerHTML = `- ${formatCurrency(currentTuition.amount)} VND`;
+                    const remaining = currentUser.balance - currentTuition.amount;
+                    document.getElementById('sumRemainingBalance').innerText = `${formatCurrency(remaining)} VND`;
+                }
 
                 resCard.classList.remove('hidden');
-
-                // Update Nhóm c calculations
-                document.getElementById('sumDeductAmount').innerText = `- ${formatCurrency(currentTuition.amount)} VND`;
-                const remaining = currentUser.balance - currentTuition.amount;
-                document.getElementById('sumRemainingBalance').innerText = `${formatCurrency(remaining)} VND`;
-
                 evaluatePaymentButtonState();
 
             } catch (err) {
@@ -1272,7 +1307,8 @@
         function evaluatePaymentButtonState() {
             const btn = document.getElementById('btnConfirmPayment');
             const banner = document.getElementById('conditionBanner');
-            const agreed = document.getElementById('termsAgreementCheckbox').checked;
+            const termsBox = document.getElementById('termsAgreementCheckbox');
+            const agreed = termsBox.checked;
 
             const chk1 = document.getElementById('chkExists');
             const chk2 = document.getElementById('chkUnpaid');
@@ -1281,7 +1317,9 @@
             if (!currentTuition || !currentUser) {
                 btn.disabled = true;
                 btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2";
+                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg><span>Xác Nhận & Nhận Mã OTP</span>`;
                 banner.className = "hidden";
+                termsBox.disabled = false;
                 resetCheckIcon(chk1, "Khoản học phí tồn tại trên hệ thống");
                 resetCheckIcon(chk2, "Khoản học phí chưa được thanh toán");
                 resetCheckIcon(chk3, "Số dư khả dụng ≥ Số tiền cần thanh toán");
@@ -1291,9 +1329,29 @@
             // Criteria 1: Exists
             setCheckIcon(chk1, true, "Khoản học phí tồn tại trên hệ thống TDTU");
 
-            // Criteria 2: Unpaid
             const isUnpaid = currentTuition.status === 'UNPAID';
-            setCheckIcon(chk2, isUnpaid, isUnpaid ? "Khoản học phí chưa thanh toán (Hợp lệ)" : "Khoản học phí ĐÃ THANH TOÁN trước đó");
+
+            // TRƯỜNG HỢP HỌC PHÍ ĐÃ THANH TOÁN (PAID)
+            if (!isUnpaid) {
+                // Đánh dấu xanh toàn bộ điều kiện vì sinh viên đã hoàn tất nghĩa vụ
+                setCheckIcon(chk2, true, "Trạng thái: Đã hoàn tất thanh toán & gạch nợ thành công");
+                setCheckIcon(chk3, true, `Số dư tài khoản an toàn (${formatCurrency(currentUser.balance)} VND)`);
+
+                banner.className = "p-3.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 block";
+                banner.innerHTML = "✅ <b>SINH VIÊN ĐÃ HOÀN TẤT NGHĨA VỤ HỌC PHÍ!</b> Khoản nợ đã được gạch bỏ trên Cổng đào tạo TDTU (:8083). Không phát sinh trích nợ thêm.";
+
+                termsBox.checked = false;
+                termsBox.disabled = true;
+
+                btn.disabled = true;
+                btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-emerald-800 bg-emerald-100 border-2 border-emerald-300 cursor-not-allowed shadow-none flex items-center justify-center space-x-2";
+                btn.innerHTML = `<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>✅ ĐÃ HOÀN TẤT HỌC PHÍ (Không Cần Đóng Thêm)</span>`;
+                return;
+            }
+
+            // TRƯỜNG HỢP CHƯA THANH TOÁN (UNPAID)
+            termsBox.disabled = false;
+            setCheckIcon(chk2, true, "Khoản học phí chưa thanh toán (Hợp lệ để đóng)");
 
             // Criteria 3: Enough Balance
             const hasEnough = currentUser.balance >= currentTuition.amount;
@@ -1301,19 +1359,12 @@
                 ? `Số dư đủ (${formatCurrency(currentUser.balance)} đ ≥ ${formatCurrency(currentTuition.amount)} đ)`
                 : `Số dư KHÔNG ĐỦ (Thiếu ${formatCurrency(currentTuition.amount - currentUser.balance)} đ)`);
 
-            if (!isUnpaid) {
-                banner.className = "p-3.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 block";
-                banner.innerText = "⚠️ Khoản học phí này đã được gạch nợ thành công tại TDTU. Bạn không thể thanh toán lại.";
-                btn.disabled = true;
-                btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2";
-                return;
-            }
-
             if (!hasEnough) {
                 banner.className = "p-3.5 rounded-xl text-xs font-bold bg-red-50 text-red-900 border border-red-200 block";
                 banner.innerText = `❌ Số dư khả dụng hiện có (${formatCurrency(currentUser.balance)} đ) không đủ để thanh toán học phí (${formatCurrency(currentTuition.amount)} đ). Vui lòng nạp thêm tiền.`;
                 btn.disabled = true;
                 btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2";
+                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg><span>Số Dư Không Đủ Thanh Toán</span>`;
                 return;
             }
 
@@ -1323,9 +1374,11 @@
             if (agreed) {
                 btn.disabled = false;
                 btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-tdtu-blue hover:bg-tdtu-navy shadow-lg hover:shadow-xl cursor-pointer transition-all flex items-center justify-center space-x-2";
+                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg><span>Xác Nhận & Nhận Mã OTP</span>`;
             } else {
                 btn.disabled = true;
                 btn.className = "w-full py-4 px-6 rounded-2xl font-extrabold text-sm text-white bg-slate-300 cursor-not-allowed shadow transition-all flex items-center justify-center space-x-2";
+                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg><span>Vui Lòng Tích Chọn Đồng Ý Thỏa Thuận</span>`;
             }
         }
 
@@ -1556,9 +1609,15 @@
 
         function closeReceiptModal() {
             document.getElementById('receiptModal').classList.add('hidden');
-            clearMssvInput();
             document.getElementById('termsAgreementCheckbox').checked = false;
-            evaluatePaymentButtonState();
+            const paidMssv = (activeTransaction && activeTransaction.mssv) || (currentTuition && currentTuition.mssv);
+            if (paidMssv) {
+                document.getElementById('mssvSearchField').value = paidMssv;
+                document.getElementById('clearMssvBtn').classList.remove('hidden');
+                executeSearchTuition();
+            } else {
+                clearMssvInput();
+            }
         }
 
         // =====================================================================
@@ -1767,7 +1826,10 @@
                 await fetch(`${API_BASE}/api/accounts/internal/reset`, { method: 'POST' });
                 await fetch(`${API_BASE}/api/tuitions/internal/reset`, { method: 'POST' });
                 alert('Đã khôi phục dữ liệu ban đầu thành công!');
-                refreshData();
+                await refreshData();
+                if (document.getElementById('mssvSearchField').value) {
+                    await executeSearchTuition();
+                }
             } catch (err) {
                 alert('Lỗi reset: ' + err.message);
             }
@@ -1891,7 +1953,46 @@
                 await executeSearchTuition();
             }
             await loadTransactionHistory();
+            await updateQuickChips();
             fetchSimulatedEmails();
+        }
+
+        async function updateQuickChips() {
+            const listEl = document.getElementById('quickChipsList');
+            if (!listEl) return;
+            const chips = [
+                { mssv: '524H0122', defaultLabel: '9.5tr' },
+                { mssv: '524H0123', defaultLabel: '8.2tr' },
+                { mssv: '524H0999', defaultLabel: '12tr' },
+                { mssv: '524H0888', defaultLabel: '7.8tr' }
+            ];
+
+            try {
+                const promises = chips.map(c => fetch(`${API_BASE}/api/tuitions/${c.mssv}`).then(r => r.json()).catch(() => null));
+                const resList = await Promise.all(promises);
+
+                let html = '';
+                chips.forEach((c, idx) => {
+                    const data = resList[idx] && resList[idx].success ? resList[idx].data : null;
+                    const isPaid = data && data.status === 'PAID';
+                    if (isPaid) {
+                        html += `
+                            <button type="button" onclick="selectQuickMssv('${c.mssv}')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 transition flex items-center space-x-1 shadow-sm">
+                                <span>✅</span><span>${c.mssv} (Đã đóng)</span>
+                            </button>
+                        `;
+                    } else {
+                        html += `
+                            <button type="button" onclick="selectQuickMssv('${c.mssv}')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-blue-100 text-tdtu-blue font-semibold border border-slate-200 transition">
+                                ${c.mssv} (${c.defaultLabel})
+                            </button>
+                        `;
+                    }
+                });
+                listEl.innerHTML = html;
+            } catch (err) {
+                console.error('Error updating quick chips:', err);
+            }
         }
 
         function formatCurrency(val) {

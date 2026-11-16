@@ -121,8 +121,8 @@
                             <td class="p-4 text-right font-mono font-black text-slate-900">${s.amount.toLocaleString('vi-VN')} VND</td>
                             <td class="p-4 text-center">
                                 ${isPaid 
-                                    ? `<span class="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">ĐÃ GẠCH NỢ (PAID)</span>`
-                                    : `<span class="inline-flex px-3 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">CHƯA THANH TOÁN</span>`
+                                    ? `<span class="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm"><span>✅</span><span>ĐÃ THANH TOÁN (PAID)</span></span>`
+                                    : `<span class="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300"><span>⏳</span><span>CHƯA THANH TOÁN</span></span>`
                                 }
                             </td>
                         </tr>

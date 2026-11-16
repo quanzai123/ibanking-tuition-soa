@@ -86,10 +86,10 @@
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <span>⚡ Concurrency Lab (Rubric 10/10)</span>
+                    <span>⚡ Concurrency Lab</span>
                 </button>
                 <button id="tabBtnDocs" onclick="switchTab('docs')" class="px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
-                    <span>📘 Kiến Trúc & Rubric</span>
+                    <span>📘 Kiến Trúc Hệ Thống</span>
                 </button>
             </div>
 
@@ -587,7 +587,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                         <div>
                             <div class="inline-flex items-center space-x-2 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold mb-1">
-                                <span>Tiêu chí 6: Transaction & Concurrency (1.5 / 1.5 Điểm)</span>
+                                <span>Phòng Thí Nghiệm Kiểm Thử Tương Tranh (Concurrency Stress Lab)</span>
                             </div>
                             <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Phòng Thí Nghiệm Xử Lý Đồng Thời (Concurrency Lab)</h2>
                             <p class="text-xs text-slate-500 mt-1">
@@ -664,13 +664,13 @@
             </div>
 
             <!-- =========================================================== -->
-            <!-- TAB 4: 📘 KIẾN TRÚC & RUBRIC (ARCHITECTURE & SPECS)        -->
+            <!-- TAB 4: 📘 KIẾN TRÚC HỆ THỐNG (ARCHITECTURE & SPECS)        -->
             <!-- =========================================================== -->
             <div id="tabDocsContent" class="hidden space-y-6">
                 <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-6">
                     <div class="pb-4 border-b border-slate-100">
-                        <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Kiến Trúc Microservices & Đối Chiếu Rubric 10.0/10.0</h2>
-                        <p class="text-xs text-slate-500 mt-1">Đại Học Tôn Đức Thắng • Môn: Kiến Trúc Hướng Dịch Vụ (SOA - 504070) • Giảng viên: Thầy Dương Hữu Phúc</p>
+                        <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Kiến Trúc Microservices & Thiết Kế Hệ Thống</h2>
+                        <p class="text-xs text-slate-500 mt-1">Đại Học Tôn Đức Thắng • Môn: Kiến Trúc Hướng Dịch Vụ (SOA - CS504070) • Giảng viên: Thầy Dương Hữu Phúc</p>
                     </div>
 
                     <!-- ARCHITECTURE DIAGRAM SUMMARY -->
@@ -711,21 +711,21 @@
                         </div>
                     </div>
 
-                    <!-- RUBRIC CHECKLIST -->
+                    <!-- ARCHITECTURE HIGHLIGHTS -->
                     <div class="p-5 rounded-2xl bg-blue-50/50 border border-blue-200 text-xs space-y-3">
-                        <h4 class="font-bold text-blue-900 text-sm">Đối chiếu Phiếu Chấm Điểm Giữa Kỳ (Rubric TDTU CS504070):</h4>
+                        <h4 class="font-bold text-blue-900 text-sm">Các Đặc Điểm Kỹ Thuật Nổi Bật Của Hệ Thống:</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-700">
                             <div class="space-y-1.5">
-                                <p>✅ <strong>Tiêu chí 1: Phân tích nghiệp vụ & UML (1.0/1.0 đ)</strong>: Use Case Diagram & ERD phân rã chuẩn.</p>
-                                <p>✅ <strong>Tiêu chí 2: Kiến trúc Microservices (1.5/1.5 đ)</strong>: Phân rã 5 service độc lập, giao tiếp REST DTO.</p>
-                                <p>✅ <strong>Tiêu chí 3: Thiết kế REST API (1.0/1.0 đ)</strong>: Chuẩn RESTful, HTTP Status 200, 400, 404, 422, ApiResponse chuẩn.</p>
-                                <p>✅ <strong>Tiêu chí 4: Database & Data Persistence (1.0/1.0 đ)</strong>: Cơ chế lưu trữ phân tán, schema ràng buộc khóa ngoại.</p>
+                                <p>🛡️ <strong>Phân Tách Ranh Giới Nghiệp Vụ (DDD)</strong>: 5 Microservices hoàn toàn độc lập, sở hữu database riêng biệt (Database-per-service).</p>
+                                <p>🛡️ <strong>API Gateway Định Tuyến</strong>: Cổng vào duy nhất bảo vệ toàn bộ mạng nội bộ, xử lý CORS và phân quyền JWT.</p>
+                                <p>🛡️ <strong>Chuẩn Hóa RESTful API</strong>: Chuẩn danh từ số nhiều, mã phản hồi HTTP Status Code (200, 400, 404, 422) và ApiResponse DTO đồng nhất.</p>
+                                <p>🛡️ <strong>Độ Tin Cậy Dữ Liệu</strong>: Ràng buộc toàn vẹn quan hệ (Constraints), cơ chế kiểm soát dữ liệu tài chính nghiêm ngặt.</p>
                             </div>
                             <div class="space-y-1.5">
-                                <p>✅ <strong>Tiêu chí 5: Hiện thực chức năng & Workflow (2.0/2.0 đ)</strong>: Đủ 3 nhóm a, b, c, OTP 5 phút, email, gạch nợ.</p>
-                                <p>✅ <strong>Tiêu chí 6: Transaction & Concurrency (1.5/1.5 đ)</strong>: Đáp ứng 100% 2 kịch bản tranh chấp đồng thời.</p>
-                                <p>✅ <strong>Tiêu chí 7: Giao diện & Tích hợp (0.5/0.5 đ)</strong>: Web Application mượt mà, tích hợp 100% backend API.</p>
-                                <p>✅ <strong>Tiêu chí 8: Documentation & Demo (1.5/1.5 đ)</strong>: Có kịch bản tự động hóa, Docker Compose, script chạy 1 dòng.</p>
+                                <p>⚡ <strong>Pessimistic Write Lock</strong>: Khóa độc quyền cấp dòng (`SELECT ... FOR UPDATE`) loại trừ hoàn toàn nguy cơ âm tiền (Double-Spending).</p>
+                                <p>⚡ <strong>Atomic Update & Saga Compensation</strong>: Cập nhật điều kiện trạng thái nguyên tử, tự động bồi hoàn 100% tiền khi gạch nợ xung đột.</p>
+                                <p>🔑 <strong>Bảo Mật 2FA OTP Ngân Hàng</strong>: Mã ngẫu nhiên CSPRNG, TTL 5 phút, so sánh hằng số thời gian chống Timing Attack.</p>
+                                <p>🐳 <strong>Triển Khai Đa Nền Tảng</strong>: Sẵn sàng Docker Compose, script khởi chạy 1-chạm cho Windows (.bat) và macOS/Linux (.sh).</p>
                             </div>
                         </div>
                     </div>

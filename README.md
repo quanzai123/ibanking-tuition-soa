@@ -27,12 +27,11 @@
 3. [Mô Hình Dữ Liệu Phân Tán (Database-per-Service & ERD)](#3-mô-hình-dữ-liệu-phân-tán-database-per-service--erd)
 4. [Đặc Tả Danh Mục REST API](#4-đặc-tả-danh-mục-rest-api)
 5. [Quy Trình Nghiệp Vụ & Saga Distributed Transaction](#5-quy-trình-nghiệp-vụ--saga-distributed-transaction)
-6. [Xử Lý Tương Tranh & Tính Nhất Quán (Concurrency Control 10/10)](#6-xử-lý-tương-tranh--tính-nhất-quán-concurrency-control-1010)
+6. [Xử Lý Tương Tranh & Tính Nhất Quán (Concurrency Control)](#6-xử-lý-tương-tranh--tính-nhất-quán-concurrency-control)
 7. [Bảo Mật 2FA OTP & Cơ Chế Giả Lập Email](#7-bảo-mật-2fa-otp--cơ-chế-giả-lập-email)
 8. [Dữ Liệu Mẫu Kiểm Thử (Seed Data)](#8-dữ-liệu-mẫu-kiểm-thử-seed-data)
-9. [Hướng Dẫn Khởi Động Nhanh (Native & Docker)](#9-hướng-dẫn-khởi-động-nhanh-native--docker)
+9. [Hướng Dẫn Tải Về & Khởi Động (Dành Cho Mọi Thiết Bị)](#9-hướng-dẫn-tải-về--khởi-động-dành-cho-mọi-thiết-bị)
 10. [Kiểm Thử Tự Động Hóa (Automated Concurrency Testing)](#10-kiểm-thử-tự-động-hóa-automated-concurrency-testing)
-11. [Bảng Đối Chiếu Phiếu Chấm Điểm (Rubric 10.0/10.0)](#11-bảng-đối-chiếu-phiếu-chấm-điểm-rubric-100100)
 
 ---
 
@@ -265,7 +264,7 @@ sequenceDiagram
 
 ---
 
-## 6. Xử Lý Tương Tranh & Tính Nhất Quán (Concurrency Control 10/10)
+## 6. Xử Lý Tương Tranh & Tính Nhất Quán (Concurrency Control)
 
 Hệ thống tài chính phải đối mặt và giải quyết triệt để 2 kịch bản tương tranh theo yêu cầu nghiêm ngặt của đề bài:
 
@@ -430,18 +429,4 @@ python3 test_concurrency.py
 🎯 KẾT QUẢ: ĐẠT YÊU CẦU 100%! Khoản học phí chỉ gạch nợ đúng 1 lần, người đến sau được bồi hoàn tiền trọn vẹn!
 ```
 
----
 
-## 11. Bảng Đối Chiếu Phiếu Chấm Điểm (Rubric 10.0/10.0)
-
-| Tiêu Chí Đánh Giá | Điểm Tối Đa | Mức Độ Hoàn Thành Trong Dự Án | Minh Chứng Thực Tế Trong Mã Nguồn |
-| :--- | :---: | :---: | :--- |
-| **1. Phân tích nghiệp vụ & UML** | **1.0 đ** | **1.0 / 1.0** | Sơ đồ Use Case phân rã rõ các Actor; ERD phân rã chuẩn hóa cho từng microservice. |
-| **2. Kiến trúc Microservices** | **1.5 đ** | **1.5 / 1.5** | Sơ đồ kiến trúc rõ ràng; 5 microservices độc lập; giao tiếp RESTful DTO; Database-per-service. |
-| **3. Thiết kế REST API** | **1.0 đ** | **1.0 / 1.0** | Danh mục API chuẩn REST; chuẩn hóa HTTP Status (200, 400, 404, 422); `ApiResponse<T>` đồng nhất. |
-| **4. Database & Data Persistence** | **1.0 đ** | **1.0 / 1.0** | H2/JPA Entity ràng buộc khóa chính/ngoại; dữ liệu seed mẫu đầy đủ; hỗ trợ Reset tự động. |
-| **5. Hiện thực chức năng & Workflow** | **2.0 đ** | **2.0 / 2.0** | Thực hiện trọn vẹn 3 nhóm thông tin a, b, c; OTP 5 phút; gạch nợ 100%; xuất biên lai điện tử. |
-| **6. Transaction & Concurrency** | **1.5 đ** | **1.5 / 1.5** | Demo thành công cả 2 kịch bản tranh chấp: Pessimistic Lock & Atomic Update + Saga Bồi hoàn. |
-| **7. Giao diện Web UI & Tích hợp** | **0.5 đ** | **0.5 / 0.5** | Web SPA thẩm mỹ chuẩn Ngân hàng số hiện đại, tích hợp 100% với Backend API Gateway. |
-| **8. Documentation, Deployment & Demo** | **1.5 đ** | **1.5 / 1.5** | Tài liệu README chi tiết; script khởi chạy 1-dòng lệnh `./run-all.sh`; sẵn sàng Docker Compose. |
-| **TỔNG ĐIỂM DỰ KIẾN** | **10.0 đ** | **10.0 / 10.0** | **Đạt mức hoàn thiện xuất sắc theo rubric (Engineering Quality nổi bật).** |

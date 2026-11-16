@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDTU Webmail - Hộp Thư Điện Tử Sinh Viên & Người Dùng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-extrabold text-lg shadow">
+                ✉️
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="font-extrabold text-base text-slate-900 tracking-tight">TDTU Webmail Simulator</h1>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Port :8084</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">OTP & Mail Service</span>
+                </div>
+                <p class="text-xs text-slate-400">Mô phỏng máy chủ Email nội bộ tiếp nhận mã OTP và Biên lai iBanking</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <a href="http://localhost:8080" class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition flex items-center space-x-1.5">
+                <span>🏦 Về App iBanking (:8080)</span>
+            </a>
+            <button onclick="loadEmails()" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span>Làm mới hòm thư</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN BODY -->
+    <main class="max-w-6xl w-full mx-auto p-4 sm:p-6 flex-1 flex flex-col space-y-4">
+        
+        <!-- STATUS BANNER -->
+        <div class="bg-gradient-to-r from-blue-900 to-indigo-950 text-white rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-blue-300">Internal Mock Notification Gateway</span>
+                <h2 class="text-lg font-extrabold mt-0.5">Hộp Thư Thông Báo Xác Thực Hai Lớp (2FA OTP)</h2>
+                <p class="text-xs text-slate-300 mt-1">Khi bạn bấm "Nhận mã OTP" tại trang iBanking (:8080), thư mới sẽ tự động xuất hiện tại đây sau 0.1 giây.</p>
+            </div>
+            <div class="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span class="text-xs font-bold text-white">Đang lắng nghe tự động (Auto-sync)</span>
+            </div>
+        </div>
+
+        <!-- EMAIL LIST CONTAINER -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col">
+            <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs font-bold text-slate-600">
+                <div class="flex items-center space-x-2">
+                    <span>📬 DANH SÁCH THƯ ĐÃ NHẬN</span>
+                    <span id="emailCountBadge" class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-[10px]">0</span>
+                </div>
+                <span class="text-slate-400 text-[11px]">Tự động cập nhật mỗi 2 giây</span>
+            </div>
+
+            <div id="emailList" class="divide-y divide-slate-100 overflow-y-auto max-h-[600px] p-2 space-y-2">
+                <div class="text-center py-16 text-slate-400 text-xs">
+                    Đang tải danh sách thư điện tử...
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
+        Đại Học Tôn Đức Thắng • Phân hệ OTP & Notification Service (:8084) • SOA CS504070
+    </footer>
+
+    <script>
+        async function loadEmails() {
+            try {
+                const res = await fetch('/api/notifications/emails');
+                const json = await res.json();
+                const list = json.data || [];
+                document.getElementById('emailCountBadge').innerText = list.length;
+                
+                const container = document.getElementById('emailList');
+                if (list.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-16 text-slate-400 text-xs space-y-2">
+                            <span class="text-3xl block">📭</span>
+                            <p class="font-bold text-slate-600">Hộp thư hiện đang trống</p>
+                            <p>Hãy qua trang <a href="http://localhost:8080" class="text-blue-600 underline font-semibold">iBanking (:8080)</a> bấm "Xác Nhận & Nhận Mã OTP" để nhận thư mới.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = list.map(m => `
+                    <div class="p-4 rounded-xl border border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/20 transition space-y-3 bg-white shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 pb-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black ${m.type === 'OTP' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'}">
+                                    ${m.type === 'OTP' ? '🔑 MÃ XÁC THỰC 2FA' : '📜 BIÊN LAI THANH TOÁN'}
+                                </span>
+                                <span class="font-extrabold text-slate-900 text-sm">${m.subject}</span>
+                            </div>
+                            <span class="text-[11px] text-slate-400 font-mono">${new Date(m.sentAt).toLocaleString('vi-VN')}</span>
+                        </div>
+
+                        <div class="text-xs text-slate-600 flex items-center space-x-2">
+                            <span class="text-slate-400">Gửi đến:</span>
+                            <span class="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">${m.to}</span>
+                        </div>
+
+                        ${m.otpCode ? `
+                            <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl flex items-center justify-between">
+                                <div class="space-y-0.5">
+                                    <span class="text-[11px] font-bold text-amber-800 block">MÃ XÁC THỰC OTP (HIỆU LỰC 5 PHÚT):</span>
+                                    <span class="font-mono font-black text-2xl text-blue-700 tracking-widest">${m.otpCode}</span>
+                                </div>
+                                <button onclick="navigator.clipboard.writeText('${m.otpCode}'); this.innerText='Đã copy!';" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow">
+                                    📋 Copy Mã
+                                </button>
+                            </div>
+                        ` : ''}
+
+                        <details class="text-xs text-slate-500">
+                            <summary class="cursor-pointer text-blue-600 hover:underline font-semibold py-1">Xem chi tiết toàn bộ nội dung email</summary>
+                            <pre class="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed">${m.content}</pre>
+                        </details>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        loadEmails();
+        setInterval(loadEmails, 2000);
+    </script>
+</body>
+</html>

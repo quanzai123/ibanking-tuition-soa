@@ -1,5 +1,17 @@
 @echo off
 chcp 65001 >nul
+cd /d "%~dp0"
+
+java -version >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo ========================================================================
+    echo ❌ KHÔNG TÌM THẤY JAVA TRÊN MÁY TÍNH!
+    echo 👉 Yêu cầu: Cài đặt Java 21 (JDK 21) để khởi động các Microservices.
+    echo ========================================================================
+    pause
+    exit /b 1
+)
+
 echo ========================================================================
 echo 🏦 KHỞI ĐỘNG HỆ THỐNG IBANKING TUITION MICROSERVICES (SOA CS504070 - TDTU)
 echo ========================================================================

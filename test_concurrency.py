@@ -10,6 +10,15 @@ Mục tiêu:
 ==============================================================================
 """
 
+import sys
+# Tương thích mã hóa UTF-8 khi in tiếng Việt và emoji trên cả Windows cmd và macOS/Linux terminal
+if sys.platform.startswith("win"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 import urllib.request
 import urllib.error
 import json

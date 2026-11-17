@@ -398,9 +398,15 @@ run-all.bat
 
 Dự án cung cấp bộ test suite tự động bằng Python sử dụng `ThreadPoolExecutor` để kích hoạt các cuộc đua tài nguyên đa luồng:
 
-```bash
-python3 test_concurrency.py
-```
+* **Trên macOS / Linux:**
+  ```bash
+  python3 test_concurrency.py
+  ```
+* **Trên Windows:**
+  ```cmd
+  python test_concurrency.py
+  ```
+  *(hoặc `py test_concurrency.py`)*
 
 ### Kết quả chạy kiểm thử thực tế:
 ```text

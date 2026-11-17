@@ -356,11 +356,12 @@ chmod +x run-all.sh stop-all.sh docker-run.sh mvnw
 * 🛑 **Để dừng toàn bộ hệ thống:** Nhấn `Ctrl + C` hoặc mở terminal chạy `./stop-all.sh`.
 
 #### 🔹 Lựa chọn B: Dành cho Windows (1-Click Run)
-Nhấp đúp chuột trực tiếp vào file **`run-all.bat`** (hoặc mở Command Prompt gõ):
-```cmd
-run-all.bat
-```
-* 🛑 **Để dừng toàn bộ hệ thống trên Windows:** Nhấp đúp chuột vào file **`stop-all.bat`**.
+* **Cách 1 (Khuyên dùng - Nhấp đúp chuột):** Nhấp đúp chuột trực tiếp vào file **`run-all.bat`** (hoặc mở Command Prompt gõ `run-all.bat`).
+* **Cách 2 (Qua PowerShell):** Mở Windows PowerShell gõ:
+  ```powershell
+  .\run-all.ps1
+  ```
+* 🛑 **Để dừng toàn bộ hệ thống trên Windows:** Nhấp đúp chuột vào file **`stop-all.bat`** (hoặc gõ `.\stop-all.ps1`).
 
 #### 🔹 Lựa chọn C: Khởi chạy bằng Docker Compose (Khép kín 100%)
 * Trên **macOS / Linux**:

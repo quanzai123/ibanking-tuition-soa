@@ -1,14 +1,6 @@
 # 🏦 Phân Hệ Đóng Học Phí iBanking (TDTU) — Kiến Trúc Hướng Dịch Vụ (SOA Microservices)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk" alt="Java 21" />
-  <img src="https://img.shields.io/badge/Spring_Boot-4.1.1-brightgreen?style=for-the-badge&logo=springboot" alt="Spring Boot" />
-  <img src="https://img.shields.io/badge/Architecture-Microservices_SOA-blue?style=for-the-badge" alt="Microservices" />
-  <img src="https://img.shields.io/badge/Distributed_Tx-Saga_Orchestration-purple?style=for-the-badge" alt="Saga" />
-  <img src="https://img.shields.io/badge/Concurrency-Pessimistic_Lock_%26_Atomic-red?style=for-the-badge" alt="Concurrency" />
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker" alt="Docker" />
-  <img src="https://img.shields.io/badge/License-100%25_Free_Open_Source-green?style=for-the-badge" alt="Free" />
-</p>
+**Công nghệ:** `Java 21` | `Spring Boot 3.4` | `Kiến trúc SOA Microservices` | `Saga Orchestration` | `Pessimistic Lock` | `Docker Ready`
 
 ---
 
@@ -55,27 +47,14 @@ Hệ thống mô phỏng phân hệ đóng học phí của ứng dụng Ngân h
 
 Hệ thống được thiết kế theo mô hình **Microservices Architecture** chuẩn SOA với 5 phân hệ dịch vụ độc lập:
 
-```mermaid
-flowchart TD
-    Client["🌐 Trình Duyệt Web (SPA iBanking UI)"] -->|HTTP / JSON :8080| Gateway["🚪 GATEWAY-SERVICE (:8080)\nReverse Proxy • CORS • Static SPA"]
-
-    subgraph Internal_Microservices ["Hệ Thống Microservices Nội Bộ (Docker / Localhost)"]
-        Gateway -->|/api/auth/** & /api/accounts/**| AccountSvc["💳 ACCOUNT-SERVICE (:8081)\nUser • Balance • Pessimistic Lock"]
-        Gateway -->|/api/tuitions/**| TuitionSvc["🎓 TUITION-SERVICE (:8083)\nTDTU Student DB • Atomic Clearance"]
-        Gateway -->|/api/payments/**| PaymentSvc["🔄 PAYMENT-SERVICE (:8082)\nSaga Orchestrator • History"]
-        Gateway -->|/api/notifications/**| OtpSvc["🔑 OTP-SERVICE (:8084)\n2FA Generator • Notification Dispatcher"]
-
-        PaymentSvc -->|1. Verify & Deduct Balance| AccountSvc
-        PaymentSvc -->|2. Clear Student Debt| TuitionSvc
-        PaymentSvc -->|3. Issue & Verify OTP| OtpSvc
-        PaymentSvc -.->|Compensating Refund on Failure| AccountSvc
-    end
-
-    AccountSvc --- AccountDB[("🗄️ account_db")]
-    TuitionSvc --- TuitionDB[("🗄️ tuition_db")]
-    PaymentSvc --- PaymentDB[("🗄️ payment_db")]
-    OtpSvc --- OtpDB[("🗄️ otp_db")]
-```
+### 🌐 Mô hình phân chia và luồng gọi giữa 5 Microservices:
+- **Người dùng (Web UI)** $ightarrow$ gửi toàn bộ request đến **Gateway Service** (`:8080`).
+- **Gateway Service (`:8080`)**: Kiểm tra JWT Token và chuyển tiếp request đến microservice tương ứng.
+- **Payment Service (`:8082`)**: Đóng vai trò nhạc trưởng điều phối toàn bộ quy trình:
+  * Gọi **Account Service (`:8081`)** để kiểm tra và trừ tiền tài khoản.
+  * Gọi **Tuition Service (`:8083`)** để tra cứu và gạch nợ học phí.
+  * Gọi **OTP Service (`:8084`)** để phát hành và xác thực mã OTP qua email.
+- **Tính tự chủ (Database-per-Service)**: Mỗi service có một cơ sở dữ liệu riêng biệt, không dùng chung CSDL để đảm bảo tính độc lập tuyệt đối.
 
 | Service | Port | Database | Trách Nhiệm Nghiệp Vụ Chính |
 | :--- | :---: | :---: | :--- |
@@ -91,67 +70,21 @@ flowchart TD
 
 Mỗi service sở hữu cơ sở dữ liệu riêng biệt nhằm đảm bảo tính độc lập (**Loose Coupling**) và toàn vẹn dữ liệu:
 
-```mermaid
-erDiagram
-    %% ACCOUNT SERVICE DB
-    USERS ||--|| ACCOUNTS : "sở hữu (1 - 1)"
-    USERS {
-        bigint id PK
-        varchar username UK
-        varchar password_hash
-        varchar full_name
-        varchar phone
-        varchar email
-    }
-    ACCOUNTS {
-        bigint id PK
-        bigint user_id FK
-        varchar account_number UK
-        decimal balance "Pessimistic Lock Row"
-    }
+### 🗄️ Cấu trúc bảng dữ liệu độc lập của từng Service:
 
-    %% TUITION SERVICE DB
-    STUDENTS ||--o{ TUITIONS : "có công nợ (1 - n)"
-    STUDENTS {
-        varchar mssv PK
-        varchar full_name
-        varchar faculty
-        varchar major
-    }
-    TUITIONS {
-        bigint id PK
-        varchar mssv FK
-        varchar semester
-        decimal amount
-        varchar status "UNPAID | PAID"
-        varchar transaction_ref
-        timestamp paid_at
-    }
+#### 1. Account Service (`account_db`):
+- **Bảng `users`**: Quản lý thông tin đăng nhập và người dùng (`id`, `username`, `password_hash`, `full_name`, `phone`, `email`).
+- **Bảng `accounts`**: Quản lý tài khoản và số dư (`id`, `user_id`, `account_number`, `balance`).
 
-    %% OTP SERVICE DB
-    OTP_RECORDS {
-        bigint id PK
-        varchar transaction_id UK
-        varchar otp_code
-        varchar recipient_email
-        timestamp expires_at "TTL 300s"
-        boolean is_used "Single-use flag"
-        int attempt_count "Max 3 attempts"
-    }
+#### 2. Tuition Service (`tuition_db` - Đại diện Cổng Đào Tạo TDTU):
+- **Bảng `students`**: Thông tin sinh viên (`mssv`, `full_name`, `faculty`, `major`).
+- **Bảng `tuitions`**: Công nợ học phí (`id`, `mssv`, `semester`, `amount`, `status` [UNPAID/PAID], `transaction_ref`, `paid_at`).
 
-    %% PAYMENT SERVICE DB
-    PAYMENT_TRANSACTIONS {
-        varchar id PK "TX-UUID"
-        bigint user_id
-        varchar mssv
-        varchar student_name
-        decimal amount
-        varchar status "PENDING_OTP | SUCCESS | FAILED"
-        varchar failure_reason
-        timestamp created_at
-        timestamp completed_at
-    }
-```
+#### 3. OTP Service (`otp_db`):
+- **Bảng `otp_records`**: Quản lý mã xác thực (`id`, `transaction_id`, `otp_code`, `recipient_email`, `expires_at`, `is_used`, `attempt_count`).
+
+#### 4. Payment Service (`payment_db`):
+- **Bảng `payment_transactions`**: Lịch sử và trạng thái giao dịch (`id`, `user_id`, `mssv`, `student_name`, `amount`, `status`, `failure_reason`, `created_at`, `completed_at`).
 
 ---
 
@@ -203,64 +136,26 @@ Toàn bộ API được thiết kế theo chuẩn **RESTful Maturity Level 2/3**
 
 Quy trình thanh toán được thực thi bởi **Saga Orchestrator** tại `payment-service`:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as 👤 Người Nộp Tiền
-    participant Web as 🌐 iBanking Web UI
-    participant Gateway as 🚪 API Gateway
-    participant Payment as 🔄 Payment-Service (Saga)
-    participant Account as 💳 Account-Service
-    participant Tuition as 🎓 Tuition-Service
-    participant OTP as 🔑 OTP-Service
+Quy trình thanh toán học phí diễn ra qua 4 bước đơn giản, rõ ràng:
 
-    User->>Web: Nhập MSSV (524H0122) & Tra cứu
-    Web->>Gateway: GET /api/tuitions/524H0122
-    Gateway->>Tuition: Tra cứu công nợ sinh viên
-    Tuition-->>Web: Họ tên SV, Khoa, Số tiền nợ (9.500.000 đ), UNPAID
-    
-    User->>Web: Đọc điều khoản & Bấm "Xác Nhận & Nhận Mã OTP"
-    Web->>Gateway: POST /api/payments/initiate { mssv }
-    Gateway->>Payment: Khởi tạo giao dịch
-    Payment->>OTP: POST /api/otp/generate { txId, email }
-    OTP-->>Payment: Mã OTP 6 số sinh mới (TTL 300s)
-    Payment-->>Web: Trả về trạng thái PENDING_OTP
-    OTP-->>User: Gửi email OTP (Notification Toast hiển thị)
+1. **Bước 1: Tra cứu học phí**
+   - Người dùng nhập MSSV trên giao diện iBanking.
+   - Gateway chuyển tiếp request sang **Tuition Service** (`:8083`) để lấy thông tin sinh viên và số tiền nợ. Hệ thống chỉ cho phép nộp khi hóa đơn có trạng thái `UNPAID`.
 
-    User->>Web: Nhập mã OTP 6 số & Bấm "Xác Nhận Thanh Toán"
-    Web->>Gateway: POST /api/payments/confirm { txId, otpCode }
-    Gateway->>Payment: Thực thi Saga Orchestrator
-    
-    Payment->>OTP: Xác thực mã OTP
-    alt OTP Sai hoặc Hết hạn 5 phút
-        OTP-->>Payment: Thất bại (OTP Invalid / Expired)
-        Payment-->>Web: Báo lỗi, hủy giao dịch
-    else OTP Hợp lệ
-        OTP-->>Payment: OTP Thành công & Khóa Single-use
-        
-        Payment->>Account: POST /deduct { userId, amount: 9.5tr } (Pessimistic Lock)
-        alt Không đủ số dư
-            Account-->>Payment: Lỗi 422 (Số dư không đủ)
-            Payment-->>Web: Giao dịch thất bại (INSUFFICIENT_BALANCE)
-        else Trừ tiền thành công
-            Account-->>Payment: Trừ tiền thành công
-            
-            Payment->>Tuition: POST /clear-debt { mssv } (Atomic Update)
-            alt Khoản nợ đã bị người khác thanh toán trước
-                Tuition-->>Payment: Lỗi 409 (ALREADY_PAID)
-                Note over Payment,Account: KÍCH HOẠT SAGA COMPENSATING TRANSACTION
-                Payment->>Account: POST /refund (Hoàn trả lại 9.5tr vào tài khoản)
-                Account-->>Payment: Hoàn tiền thành công
-                Payment-->>Web: Báo lỗi gạch nợ & Xác nhận đã hoàn trả tiền
-            else Gạch nợ thành công
-                Tuition-->>Payment: Cập nhật status='PAID' thành công
-                Payment->>Payment: Lưu lịch sử giao dịch SUCCESS
-                Payment->>OTP: Gửi Email Biên lai giao dịch điện tử
-                Payment-->>Web: Trả về kết quả SUCCESS & Xuất Biên Lai E-Receipt
-            end
-        end
-    end
-```
+2. **Bước 2: Khởi tạo giao dịch & Gửi OTP**
+   - Người dùng xác nhận thông tin và bấm nhận OTP.
+   - **Payment Service** (`:8082`) kiểm tra số dư sơ bộ từ Account Service, tạo giao dịch ở trạng thái `PENDING`.
+   - Payment Service gọi sang **OTP Service** (`:8084`) để tạo mã xác thực 6 số (hạn dùng 5 phút) và gửi email cho người nộp.
+
+3. **Bước 3: Xác thực OTP & Trừ tiền tài khoản**
+   - Người dùng nhập mã OTP 6 số.
+   - Payment Service gọi OTP Service để xác thực.
+   - Nếu OTP hợp lệ, Payment Service gọi **Account Service** (`:8081`) để trừ tiền số dư (sử dụng khóa `Pessimistic Lock` để ngăn chặn việc bị âm tiền).
+
+4. **Bước 4: Gạch nợ học phí & Bồi hoàn tự động (Saga Compensation)**
+   - Payment Service gọi sang **Tuition Service** (`:8083`) để chuyển trạng thái công nợ sang `PAID`.
+   - **Trường hợp 1 (Thành công):** Giao dịch hoàn tất, gửi email biên lai điện tử cho người nộp.
+   - **Trường hợp 2 (Xảy ra xung đột - Hóa đơn đã bị nộp trước):** Tuition Service từ chối gạch nợ. Payment Service lập tức kích hoạt cơ chế bồi hoàn: **Hoàn lại 100% số tiền đã trừ** về tài khoản người nộp ngay lập tức. Khách hàng không bao giờ bị mất tiền!
 
 ---
 
